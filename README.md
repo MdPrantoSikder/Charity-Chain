@@ -61,7 +61,7 @@ cp .env.example .env
 #   then fill in your own SSLCommerz sandbox credentials and DB settings
 
 # 3. Bring up the stack
-docker compose up --build
+docker compose up --build.
 ```
 
 > **Never commit your real `.env`.** It is gitignored by default. Only `.env.example` (with placeholder values) belongs in the repo.
