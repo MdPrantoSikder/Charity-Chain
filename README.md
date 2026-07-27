@@ -54,7 +54,7 @@ Donor / Org UI  ──►  API layer  ──►  CB-BFT consensus  ──►  Pe
 ```bash
 # 1. Clone
 git clone https://github.com/<your-username>/charitychain.git
-cd charitychain
+cd charitychain.
 
 # 2. Configure environment.
 cp .env.example .env
