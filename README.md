@@ -52,7 +52,7 @@ Donor / Org UI  ──►  API layer  ──►  CB-BFT consensus  ──►  Pe
 ## Getting started
 
 ```bash
-# 1. Clone
+# 1. Clone.
 git clone https://github.com/<your-username>/charitychain.git
 cd charitychain.
 
