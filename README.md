@@ -66,7 +66,7 @@ docker compose up --build.
 
 > **Never commit your real `.env`.** It is gitignored by default. Only `.env.example` (with placeholder values) belongs in the repo.
 
-## Repository layout
+## Repository layout.
 
 ```
 charitychain/
