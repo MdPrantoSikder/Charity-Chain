@@ -2,7 +2,7 @@
 
 A blockchain-based charity donation platform with a custom permissioned consensus mechanism, built as the applied system for undergraduate thesis + capstone research on attribute-based node clustering.
 
-> **Status:** Active development · Final-year thesis project (CSE, University of Liberal Arts Bangladesh)
+> **Status:** Active development · Final-year thesis project (CSE, University of Liberal Arts Bangladesh.)
 
 ---
 
