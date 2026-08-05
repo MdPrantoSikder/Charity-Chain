@@ -4,7 +4,7 @@ A blockchain-based charity donation platform with a custom permissioned consensu
 
 > **Status:** Active development · Final-year thesis project (CSE, University of Liberal Arts Bangladesh.)
 
----
+----
 
 ## What it is
 
