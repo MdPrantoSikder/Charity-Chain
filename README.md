@@ -74,7 +74,7 @@ charitychain/
 ├── consensus/         # CB-BFT: CRITIC scoring, clustering, leader selection, commit
 ├── api/               # FastAPI app, routes, SSLCommerz integration
 ├── benchmarks/        # CB-BFT vs Raft comparison harness + results
-├── frontend/          # React (Bootstrap) donor/org UI
+├── frontend/          # React (Bootstrap) donor/org UI.
 ├── docker/            # Dockerfiles + compose for the multi-node network.
 ├── docs/              # thesis notes, architecture, evaluation writeup.
 ├── .env.example
