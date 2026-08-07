@@ -75,7 +75,7 @@ charitychain/
 ├── api/               # FastAPI app, routes, SSLCommerz integration
 ├── benchmarks/        # CB-BFT vs Raft comparison harness + results
 ├── frontend/          # React (Bootstrap) donor/org UI
-├── docker/            # Dockerfiles + compose for the multi-node network
+├── docker/            # Dockerfiles + compose for the multi-node network.
 ├── docs/              # thesis notes, architecture, evaluation writeup.
 ├── .env.example
 ├── .gitignore
