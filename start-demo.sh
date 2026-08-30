@@ -14,7 +14,7 @@ docker run -d --name charitychain-db \
 sleep 8
 
 echo "[2/5] Generating CB-BFT genesis for $NODES validators"
-rm -rf networkFiles node*/data
+sudo rm -rf networkFiles node*/data
 docker run --rm -v "$PWD":/work -w /work --user root "$IMAGE" \
   operator generate-blockchain-config \
   --config-file=qbftConfigFile.json --to=networkFiles --private-key-file-name=key

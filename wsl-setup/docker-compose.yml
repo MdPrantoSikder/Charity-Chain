@@ -1,91 +1,223 @@
-version: '3.8'
 services:
   node1:
-    image: hyperledger/besu:24.1.0
-    container_name: besu-node1
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node1
+    environment:
+      BESU_OPTS: "-Xmx512m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.10
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-ws-enabled
+      - --rpc-ws-host=0.0.0.0
+      - --rpc-ws-port=8546
+      - --rpc-ws-api=ETH,NET,WEB3
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
     volumes:
-      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
-      - ${HOME}/charitychain-besu/networkFiles/keys/0x945753b1e6420a48837a1da2ad17d2155bec09bc:/opt/besu/keys
-      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
-    command: >
-      --genesis-file=/genesis.json
-      --node-private-key-file=/opt/besu/keys/key
-      --static-nodes-file=/opt/besu/static-nodes.json
-      --rpc-http-enabled
-      --rpc-http-api=ETH,NET,IBFT,WEB3,MINER
-      --rpc-http-host=0.0.0.0
-      --rpc-http-port=8545
-      --rpc-http-cors-origins=*
-      --host-allowlist=*
-      --p2p-host=172.20.0.2
-      --p2p-port=30303
-      --discovery-enabled=false
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node1/data:/opt/besu/data
     ports:
       - "8545:8545"
+      - "8600:8546"
+    cpus: 2.0
+    mem_limit: 900m
+    labels:
+      cbbft.tier: "A"
     networks:
-      besu-net:
-        ipv4_address: 172.20.0.2
-
+      cbbft:
+        ipv4_address: 172.28.0.10
   node2:
-    image: hyperledger/besu:24.1.0
-    container_name: besu-node2
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node2
+    environment:
+      BESU_OPTS: "-Xmx512m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.11
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
     volumes:
-      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
-      - ${HOME}/charitychain-besu/networkFiles/keys/0x1255902d16c0644104448631cbd1470a1a683d6c:/opt/besu/keys
-      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
-    command: >
-      --genesis-file=/genesis.json
-      --node-private-key-file=/opt/besu/keys/key
-      --static-nodes-file=/opt/besu/static-nodes.json
-      --rpc-http-enabled=false
-      --p2p-host=172.20.0.3
-      --p2p-port=30303
-      --discovery-enabled=false
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node2/data:/opt/besu/data
+    ports:
+      - "8546:8545"
+    cpus: 2.0
+    mem_limit: 900m
+    labels:
+      cbbft.tier: "A"
     networks:
-      besu-net:
-        ipv4_address: 172.20.0.3
-
+      cbbft:
+        ipv4_address: 172.28.0.11
   node3:
-    image: hyperledger/besu:24.1.0
-    container_name: besu-node3
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node3
+    environment:
+      BESU_OPTS: "-Xmx512m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.12
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
     volumes:
-      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
-      - ${HOME}/charitychain-besu/networkFiles/keys/0x9cb9d8cc18c3df659a2ba9ff683909103725f6e6:/opt/besu/keys
-      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
-    command: >
-      --genesis-file=/genesis.json
-      --node-private-key-file=/opt/besu/keys/key
-      --static-nodes-file=/opt/besu/static-nodes.json
-      --rpc-http-enabled=false
-      --p2p-host=172.20.0.4
-      --p2p-port=30303
-      --discovery-enabled=false
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node3/data:/opt/besu/data
+    ports:
+      - "8547:8545"
+    cpus: 2.0
+    mem_limit: 900m
+    labels:
+      cbbft.tier: "A"
     networks:
-      besu-net:
-        ipv4_address: 172.20.0.4
-
+      cbbft:
+        ipv4_address: 172.28.0.12
   node4:
-    image: hyperledger/besu:24.1.0
-    container_name: besu-node4
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node4
+    environment:
+      BESU_OPTS: "-Xmx384m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.13
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
     volumes:
-      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
-      - ${HOME}/charitychain-besu/networkFiles/keys/0x094503f6dae81ebe11e85c1713c04daefe0562c9:/opt/besu/keys
-      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
-    command: >
-      --genesis-file=/genesis.json
-      --node-private-key-file=/opt/besu/keys/key
-      --static-nodes-file=/opt/besu/static-nodes.json
-      --rpc-http-enabled=false
-      --p2p-host=172.20.0.5
-      --p2p-port=30303
-      --discovery-enabled=false
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node4/data:/opt/besu/data
+    ports:
+      - "8548:8545"
+    cpus: 0.75
+    mem_limit: 800m
+    labels:
+      cbbft.tier: "B"
     networks:
-      besu-net:
-        ipv4_address: 172.20.0.5
+      cbbft:
+        ipv4_address: 172.28.0.13
+  node5:
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node5
+    environment:
+      BESU_OPTS: "-Xmx384m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.14
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
+    volumes:
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node5/data:/opt/besu/data
+    ports:
+      - "8549:8545"
+    cpus: 0.75
+    mem_limit: 800m
+    labels:
+      cbbft.tier: "B"
+    networks:
+      cbbft:
+        ipv4_address: 172.28.0.14
+  node6:
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node6
+    environment:
+      BESU_OPTS: "-Xmx384m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.15
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
+    volumes:
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node6/data:/opt/besu/data
+    ports:
+      - "8550:8545"
+    cpus: 0.75
+    mem_limit: 800m
+    labels:
+      cbbft.tier: "B"
+    networks:
+      cbbft:
+        ipv4_address: 172.28.0.15
+  node7:
+    image: mdpranto0sikder/cbbft-besu:1.0
+    container_name: cbbft-node7
+    environment:
+      BESU_OPTS: "-Xmx256m"
+    command:
+      - --genesis-file=/opt/besu/genesis.json
+      - --data-path=/opt/besu/data
+      - --node-private-key-file=/opt/besu/data/key
+      - --p2p-host=172.28.0.16
+      - --p2p-port=30303
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3,ADMIN,TXPOOL,QBFT,IBFT
+      - --host-allowlist=*
+      - --rpc-http-cors-origins=*
+      - --min-gas-price=0
+    volumes:
+      - ./networkFiles/genesis.json:/opt/besu/genesis.json:ro
+      - ./node7/data:/opt/besu/data
+    ports:
+      - "8551:8545"
+    cpus: 0.30
+    mem_limit: 700m
+    labels:
+      cbbft.tier: "C"
+    networks:
+      cbbft:
+        ipv4_address: 172.28.0.16
 
 networks:
-  besu-net:
-    driver: bridge
+  cbbft:
+    name: cbbft-net
     ipam:
       config:
-        - subnet: 172.20.0.0/24
+        - subnet: 172.28.0.0/24
