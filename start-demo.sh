@@ -35,8 +35,16 @@ for i in $(seq 1 40); do
   sleep 3
 done
 
-echo "[5/5] Starting the API"
+echo "[5/7] Deploying CharityChain contract"
+cd ../blockchain
+npx hardhat run scripts/deploy.js --network localhost || echo "  deploy failed - donations will not work"
 cd ../backend
+
+echo "[6/7] Creating default users"
+export DATABASE_URL="postgresql+asyncpg://postgres:charitychain@localhost:5432/charitychain"
+python3 create_admin.py || true
+
+echo "[7/7] Starting the API"
 export DATABASE_URL="postgresql+asyncpg://postgres:charitychain@localhost:5432/charitychain"
 export HARDHAT_RPC_URL="http://127.0.0.1:8545"
 export HARDHAT_ENABLED="true"
