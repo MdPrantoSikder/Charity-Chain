@@ -502,17 +502,17 @@
                 <span class="alert-icon">🔗</span>
                 <div class="alert-body">
                   <div class="alert-title">CB-BFT Consensus</div>
-                  <div class="alert-desc">Attribute-Based Pool Consensus — 9-layer verification with VRF-WRLE leader election and HotStuff BFT</div>
+                  <div class="alert-desc">Cluster-Based BFT — CRITIC-scored proposer selection inside Hyperledger Besu</div>
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:10px">
                 <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Algorithm</span><strong>CB-BFT (L1 → L9)</strong></div>
                 <div class="divider" style="margin:4px 0"></div>
-                <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Leader Election</span><strong>VRF-WRLE</strong></div>
+                <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Leader Election</span><strong>CRITIC top-30%</strong></div>
                 <div class="divider" style="margin:4px 0"></div>
                 <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Intra-Pool</span><strong>BFT (L7)</strong></div>
                 <div class="divider" style="margin:4px 0"></div>
-                <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Inter-Pool</span><strong>HotStuff (L8)</strong></div>
+                <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Inter-Pool</span><strong>QBFT commit</strong></div>
                 <div class="divider" style="margin:4px 0"></div>
                 <div class="flex-between" style="font-size:13px"><span style="color:var(--muted)">Current Epoch</span><strong id="current-epoch">—</strong></div>
                 <div class="divider" style="margin:4px 0"></div>
@@ -611,15 +611,15 @@
       <div id="consensus-progress" style="display:none">
         <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em">🧠 CB-BFT Consensus Running...</div>
         <div class="consensus-stages">
-          <div class="stage-row" id="stage-l1"><span class="stage-icon">🔐</span><span class="stage-label">L1 — Entry Gate (MSP + Stake check)</span><span class="stage-badge" id="stage-l1-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l2"><span class="stage-icon">⚖️</span><span class="stage-label">L2 — Hybrid Entropy-Variance Weights</span><span class="stage-badge" id="stage-l2-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l3"><span class="stage-icon">📉</span><span class="stage-label">L3 — Temporal Decay Scores</span><span class="stage-badge" id="stage-l3-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l4"><span class="stage-icon">🎯</span><span class="stage-label">L4 — 5D Density + Fusion Score</span><span class="stage-badge" id="stage-l4-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l5"><span class="stage-icon">🏊</span><span class="stage-label">L5 — Pool Formation (SGDC)</span><span class="stage-badge" id="stage-l5-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l6"><span class="stage-icon">👑</span><span class="stage-label">L6 — VRF-WRLE Leader Election</span><span class="stage-badge" id="stage-l6-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l7"><span class="stage-icon">🗳️</span><span class="stage-label">L7 — Intra-Pool BFT Vote</span><span class="stage-badge" id="stage-l7-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l8"><span class="stage-icon">🔗</span><span class="stage-label">L8 — Inter-Pool HotStuff Confirm</span><span class="stage-badge" id="stage-l8-badge">waiting</span></div>
-          <div class="stage-row" id="stage-l9"><span class="stage-icon">📊</span><span class="stage-label">L9 — F-score Update + JSD Monitor</span><span class="stage-badge" id="stage-l9-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l1"><span class="stage-icon">&#128274;</span><span class="stage-label">Escrow lock submitted to Besu</span><span class="stage-badge" id="stage-l1-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l2"><span class="stage-icon">&#9878;</span><span class="stage-label">CRITIC scoring of validators</span><span class="stage-badge" id="stage-l2-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l3"><span class="stage-icon">&#128201;</span><span class="stage-label">Adaptive clustering by score</span><span class="stage-badge" id="stage-l3-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l4"><span class="stage-icon">&#127919;</span><span class="stage-label">Proposer selected from top 30%</span><span class="stage-badge" id="stage-l4-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l5"><span class="stage-icon">&#127946;</span><span class="stage-label">Transaction included in block</span><span class="stage-badge" id="stage-l5-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l6"><span class="stage-icon">&#128081;</span><span class="stage-label">Block proposed by CB-BFT leader</span><span class="stage-badge" id="stage-l6-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l7"><span class="stage-icon">&#128499;</span><span class="stage-label">Validators commit (2f+1 quorum)</span><span class="stage-badge" id="stage-l7-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l8"><span class="stage-icon">&#128279;</span><span class="stage-label">Block hash anchored on chain</span><span class="stage-badge" id="stage-l8-badge">waiting</span></div>
+          <div class="stage-row" id="stage-l9"><span class="stage-icon">&#128202;</span><span class="stage-label">Milestone released, receipt issued</span><span class="stage-badge" id="stage-l9-badge">waiting</span></div>
         </div>
       </div>
       <div id="consensus-result" style="display:none;margin-top:16px">
@@ -879,8 +879,15 @@ function drawCategoryChart() {
     categoryChart = null;
   }
 
-  var catLabels = ['Medical', 'Education', 'Food & Shelter', 'Emergency'];
-  var catValues = [40, 30, 20, 10];
+  var counts = {};
+  (allCases || []).forEach(function(c) {
+    var k = (c.category || 'Other');
+    k = k.charAt(0).toUpperCase() + k.slice(1);
+    counts[k] = (counts[k] || 0) + 1;
+  });
+  var catLabels = Object.keys(counts);
+  var catValues = catLabels.map(function(k) { return counts[k]; });
+  if (catLabels.length === 0) { catLabels = ['No cases yet']; catValues = [1]; }
   var catColors = ['#6C63FF', '#3BAAFF', '#00C9A7', '#F7A935'];
 
   categoryChart = new Chart(canvas, {
