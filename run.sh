@@ -59,6 +59,11 @@ done
 echo "[7/7] Creating default users"
 python3 create_admin.py 2>&1 | tail -1
 
+if [ -n "${CODESPACE_NAME:-}" ]; then
+  gh codespace ports visibility 8000:public -c "$CODESPACE_NAME" >/dev/null 2>&1 \
+    && echo "      port 8000 set to public"
+fi
+
 echo ""
 echo "======================================================================"
 echo "  CharityChain is running"
