@@ -750,7 +750,7 @@ function renderCasesGrid(cases) {
   }
   const icons = { Medical:'🏥', Education:'📚', Food:'🍽️', Shelter:'🏠', Emergency:'🚨' };
   grid.innerHTML = cases.map(c => {
-    const pct = Math.round(((c.amount_funded || 0) / (c.amount_needed || 1)) * 100);
+    const pct = +(((c.amount_funded || 0) / (c.amount_needed || 1)) * 100).toFixed(1);
     return '<div class="case-card" onclick="openDonateModal(\'' + c.id + '\', \'' + c.title.replace(/'/g, "\\'") + '\', ' + c.amount_needed + ', ' + (c.amount_funded || 0) + ')"><div class="case-img">' + (icons[c.category] || '❤️') + '</div><div class="case-body"><div class="case-category">' + (c.category || 'General') + '</div><div class="case-title">' + c.title + '</div><div class="case-amounts"><span>Needed: <strong>$' + (c.amount_needed||0).toLocaleString() + '</strong></span><span>Funded: <strong style="color:var(--success)">$' + (c.amount_funded||0).toLocaleString() + '</strong></span></div><div class="progress-wrap"><div class="progress-bar" style="width:' + Math.min(pct,100) + '%"></div></div><div class="case-footer"><span style="font-size:12px;color:var(--muted)">' + pct + '% funded</span><span class="btn btn-primary btn-sm">Donate</span></div></div></div>';
   }).join('');
 }
@@ -761,7 +761,7 @@ function renderRecommendedCases(cases) {
   if (!cases.length) return;
   const icons = { Medical:'🏥', Education:'📚', Food:'🍽️', Shelter:'🏠', Emergency:'🚨' };
   el.innerHTML = cases.map(c => {
-    const pct = Math.round(((c.amount_funded||0) / (c.amount_needed||1)) * 100);
+    const pct = +(((c.amount_funded||0) / (c.amount_needed||1)) * 100).toFixed(1);
     return '<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:20px">' + (icons[c.category]||'❤️') + '</span><div><div style="font-size:13px;font-weight:600;color:var(--text)">' + c.title + '</div><div style="font-size:11px;color:var(--muted)">Needs $' + (c.amount_needed||0).toLocaleString() + '</div></div><button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openDonateModal(\'' + c.id + '\',\'' + c.title.replace(/'/g, "\\'") + '\',' + c.amount_needed + ',' + (c.amount_funded||0) + ')">Donate</button></div><div class="progress-wrap"><div class="progress-bar" style="width:' + Math.min(pct,100) + '%"></div></div><div style="font-size:11px;color:var(--muted);margin-top:3px">' + pct + '% funded</div></div>';
   }).join('');
 }

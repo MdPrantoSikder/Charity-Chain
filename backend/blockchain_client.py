@@ -79,13 +79,13 @@ class BlockchainClient:
     def _send_tx(self, fn):
         tx = fn.build_transaction({
             "from":     self.account.address,
-            "nonce":    self.w3.eth.get_transaction_count(self.account.address),
+            "nonce":    self.w3.eth.get_transaction_count(self.account.address, "pending"),
             "gas":      300000,
-            "gasPrice": self.w3.eth.gas_price,
+            "gasPrice": 1000000000,
         })
         signed  = self.w3.eth.account.sign_transaction(tx, self.account.key)
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
-        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=25, poll_latency=0.1)
         return receipt
 
     def lock_funds(self, donation_id: str, donor_id: str, case_id: str) -> dict:

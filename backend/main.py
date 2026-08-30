@@ -122,3 +122,6 @@ async def check_besu_network_link():
             }
     except Exception as e:
         return {"status": "Network Error Exception", "detail": str(e)}
+from fastapi.staticfiles import StaticFiles
+import os as _os
+app.mount("/app", StaticFiles(directory=_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),"frontend"), html=True), name="frontend")
