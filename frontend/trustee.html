@@ -109,10 +109,13 @@
     .modal-overlay.open { display: flex; }
 
     .modal {
+      max-height: 85vh;
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
       background: var(--card);
       border-radius: var(--radius-lg);
-      width: 100%;
-      max-width: 500px;
       box-shadow: var(--shadow-lg);
       overflow: hidden;
     }
@@ -139,7 +142,7 @@
 
     .modal-close:hover { background: var(--danger-subtle); color: var(--danger); }
 
-    .modal-body   { padding: 24px; }
+    .modal-body   { padding: 24px; overflow-y: auto; flex: 1 1 auto; }
     .modal-footer {
       padding: 14px 24px;
       border-top: 1px solid var(--border);
@@ -747,6 +750,7 @@
             <span class="case-detail-label">IPFS Documents</span>
             <span class="hash-copy" id="review-ipfs">—</span>
           </div>
+          <div id="review-docs" style="margin-top:8px"></div>
         </div>
       </div>
 
@@ -1177,6 +1181,32 @@ function openReviewModal(caseId) {
     c.created_at ? new Date(c.created_at).toLocaleString() : '—';
   document.getElementById('review-ipfs').textContent        =
     c.ipfs_cid ? c.ipfs_cid.substring(0,16)+'...' : 'No documents';
+
+  // Load supporting documents for this case
+  (async function () {
+    var box = document.getElementById('review-docs');
+    if (!box) return;
+    box.innerHTML = '<span style="font-size:12px;color:var(--muted)">Loading documents…</span>';
+    try {
+      var docs = await apiFetch('/api/cases/' + c.id + '/documents');
+      if (!docs || docs.length === 0) {
+        box.innerHTML = '<span style="font-size:12px;color:var(--muted)">No documents uploaded</span>';
+        return;
+      }
+      box.innerHTML = docs.map(function (d) {
+        var icon = (d.content_type || '').indexOf('image') === 0 ? '\uD83D\uDDBC\uFE0F'
+                 : (d.content_type || '').indexOf('pdf') > -1   ? '\uD83D\uDCC4' : '\uD83D\uDCCE';
+        return '<a href="' + API_BASE + '/api/cases/documents/' + d.id + '/view" target="_blank" rel="noopener" ' +
+               'style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:6px;' +
+               'background:var(--bg);border:1px solid var(--border);border-radius:8px;' +
+               'font-size:12px;color:var(--text);text-decoration:none">' +
+               '<span>' + icon + '</span><span style="flex:1">' + d.filename + '</span>' +
+               '<span style="color:var(--primary);font-weight:600">View</span></a>';
+      }).join('');
+    } catch (e) {
+      box.innerHTML = '<span style="font-size:12px;color:var(--danger)">Could not load documents</span>';
+    }
+  })();
   document.getElementById('review-description').textContent =
     c.description || 'No description provided';
   document.getElementById('review-notes').value = '';
