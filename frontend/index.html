@@ -839,88 +839,48 @@
   <div class="section-inner">
     <div class="section-tag">Real Impact</div>
     <div class="section-heading">Cases waiting for your help</div>
-    <div class="section-desc">
-      Every case is verified by a licensed trustee. Your donation goes directly
-      to the person who needs it — tracked every step of the way.
+    <p class="section-sub">Every case is verified by a licensed trustee. Your donation goes
+       directly to the person who needs it — tracked every step of the way.</p>
+    <div id="landing-cases" class="story-grid" style="margin-top:24px">
+      <p style="color:#8A8FA8;font-size:14px">Loading cases…</p>
     </div>
-
-    <div class="stories-grid">
-      <div class="story-card">
-        <div class="story-img" style="background:linear-gradient(135deg,#EDE9FE,#DDD6FE)">🏥</div>
-        <div class="story-body">
-          <div class="story-category">Medical Emergency</div>
-          <div class="story-title">Heart surgery for 8-year-old Rahim from Sylhet</div>
-          <div class="story-desc">
-            Rahim was diagnosed with a congenital heart defect. His family cannot afford
-            the surgery. Every donation brings him closer to a normal life.
-          </div>
-          <div class="story-progress">
-            <div class="story-meta">
-              <span>Raised: <strong>$3,200</strong></span>
-              <span>Goal: <strong>$8,000</strong></span>
-            </div>
-            <div class="progress-wrap">
-              <div class="progress-bar" style="width:40%"></div>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">40% funded · 23 donors</div>
-          </div>
-          <a href="login.html" class="btn btn-primary btn-sm btn-block">Donate to Rahim</a>
-        </div>
-      </div>
-
-      <div class="story-card">
-        <div class="story-img" style="background:linear-gradient(135deg,#D1FAE5,#A7F3D0)">📚</div>
-        <div class="story-body">
-          <div class="story-category">Education</div>
-          <div class="story-title">University fees for Fatema — first in her family to go to college</div>
-          <div class="story-desc">
-            Fatema scored among the top 5% in her HSC exams but her family cannot
-            afford university fees. Help her break the cycle of poverty.
-          </div>
-          <div class="story-progress">
-            <div class="story-meta">
-              <span>Raised: <strong>$1,800</strong></span>
-              <span>Goal: <strong>$3,000</strong></span>
-            </div>
-            <div class="progress-wrap">
-              <div class="progress-bar" style="width:60%"></div>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">60% funded · 41 donors</div>
-          </div>
-          <a href="login.html" class="btn btn-primary btn-sm btn-block">Support Fatema</a>
-        </div>
-      </div>
-
-      <div class="story-card">
-        <div class="story-img" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A)">🏠</div>
-        <div class="story-body">
-          <div class="story-category">Shelter</div>
-          <div class="story-title">Rebuild home for flood victim family in Sunamganj</div>
-          <div class="story-desc">
-            The 2024 floods destroyed the home of Karim and his 6-member family.
-            They have been living in a temporary shelter for 4 months. Help them
-            rebuild.
-          </div>
-          <div class="story-progress">
-            <div class="story-meta">
-              <span>Raised: <strong>$900</strong></span>
-              <span>Goal: <strong>$5,000</strong></span>
-            </div>
-            <div class="progress-wrap">
-              <div class="progress-bar" style="width:18%"></div>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">18% funded · 12 donors</div>
-          </div>
-          <a href="login.html" class="btn btn-primary btn-sm btn-block">Help Karim's Family</a>
-        </div>
-      </div>
-    </div>
-
-    <div style="text-align:center;margin-top:32px">
-      <a href="login.html" class="btn-hero-ghost">View All Approved Cases →</a>
-    </div>
-  </div>
-</section>
+    <script>
+    (function () {
+      var base = location.origin;
+      fetch(base + '/api/cases/approved')
+        .then(function (r) { return r.json(); })
+        .then(function (cases) {
+          var box = document.getElementById('landing-cases');
+          if (!cases || !cases.length) {
+            box.innerHTML = '<p style="color:#8A8FA8;font-size:14px">' +
+              'No active cases at the moment. New cases appear here once a trustee verifies them.</p>';
+            return;
+          }
+          var icons = { medical:'\uD83C\uDFE5', education:'\uD83D\uDCDA',
+                        shelter:'\uD83C\uDFE0', food:'\uD83C\uDF5B', emergency:'\u26A0\uFE0F' };
+          box.innerHTML = cases.slice(0, 3).map(function (c) {
+            var need = c.amount_needed || 0, got = c.amount_funded || 0;
+            var pct = need ? +((got / need) * 100).toFixed(1) : 0;
+            return '<div class="story-card"><div class="story-icon">' +
+              (icons[(c.category || '').toLowerCase()] || '\u2764\uFE0F') + '</div>' +
+              '<div class="story-cat">' + (c.category || 'General') + '</div>' +
+              '<div class="story-title">' + (c.title || '') + '</div>' +
+              '<div class="story-text">' + (c.description || '') + '</div>' +
+              '<div class="story-amounts"><span>Raised: <strong>$' + got.toLocaleString() +
+              '</strong></span><span>Goal: <strong>$' + need.toLocaleString() + '</strong></span></div>' +
+              '<div class="progress-wrap"><div class="progress-bar" style="width:' +
+              Math.min(pct, 100) + '%"></div></div>' +
+              '<div class="story-meta">' + pct + '% funded</div>' +
+              '<a href="login.html" class="btn btn-primary btn-sm btn-block">Donate</a></div>';
+          }).join('');
+        })
+        .catch(function () {
+          document.getElementById('landing-cases').innerHTML =
+            '<p style="color:#8A8FA8;font-size:14px">Cases unavailable right now.</p>';
+        });
+    })();
+    </script>
+    </section>
 
 <!-- ── HOW IT WORKS ── -->
 <section class="how-section" id="how-it-works">

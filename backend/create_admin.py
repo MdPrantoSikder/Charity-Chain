@@ -8,15 +8,15 @@ async def create_default_users():
         users = [
             User(
                 full_name      = 'System Admin',
-                email          = 'admin@charitychain.com',
-                hashed_pw      = hash_password('Admin@1234'),
+                email          = 'a@a.com',
+                hashed_pw      = hash_password('12345678'),
                 role           = 'admin',
                 kyc_status     = 'verified',
                 wallet_balance = 0.0,
             ),
             User(
                 full_name      = 'Demo Donor',
-                email          = 'donor@charitychain.com',
+                email          = 'd@d.com',
                 hashed_pw      = hash_password('12345678'),
                 role           = 'donor',
                 kyc_status     = 'verified',
@@ -24,7 +24,7 @@ async def create_default_users():
             ),
             User(
                 full_name      = 'Demo Needy',
-                email          = 'needy@charitychain.com',
+                email          = 'n@n.com',
                 hashed_pw      = hash_password('12345678'),
                 role           = 'needy',
                 kyc_status     = 'verified',
@@ -32,7 +32,7 @@ async def create_default_users():
             ),
             User(
                 full_name      = 'Demo Trustee',
-                email          = 'trustee@charitychain.com',
+                email          = 't@t.com',
                 hashed_pw      = hash_password('12345678'),
                 role           = 'trustee',
                 kyc_status     = 'verified',
