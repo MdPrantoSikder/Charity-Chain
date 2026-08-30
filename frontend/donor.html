@@ -482,7 +482,7 @@
         <div class="pool-viz-wrap">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">🧠 CB-BFT Proposer Distribution</div>
+              <div class="card-title">🧠 CB-BFT Proposers (last 30 blocks)</div>
               <span class="badge badge-primary">Current Epoch</span>
             </div>
             <div class="card-body">
@@ -708,7 +708,7 @@ function switchDashTab(name, btnEl) {
   if (btnEl) btnEl.classList.add('active');
 
   // Lazy-init pool chart when transparency tab opens
-  if (name === 'transparency' && !poolChart) {
+  if (name === 'transparency') {
     setTimeout(() => drawPoolChart(), 100);
   }
 }
@@ -950,10 +950,12 @@ function drawPoolChart() {
   fetch(API_BASE + '/api/nodes')
     .then(function (r) { return r.json(); })
     .then(function (nodes) {
+      var idx = {};
+      (nodes || []).forEach(function (n, k) { idx[n.address] = k + 1; });
       var data = (nodes || []).filter(function (n) { return (n.proposals || 0) > 0; })
         .map(function (n, i) {
           return { value: n.proposals,
-                   name: n.address.substring(0, 8) + '\u2026',
+                   name: 'Node ' + idx[n.address] + ' (' + n.address.substring(2, 8) + ')',
                    itemStyle: { color: colors[i % colors.length] } };
         });
       var idle = (nodes || []).filter(function (n) { return (n.proposals || 0) === 0; }).length;
@@ -963,12 +965,24 @@ function drawPoolChart() {
                                        itemStyle: { color: '#C9CDD8' } }];
       poolChart.setOption({
         animation: false,
-        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        grid: { left: 95, right: 30, top: 10, bottom: 25 },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                   formatter: '{b}<br/>{c} blocks proposed' },
+        xAxis: { type: 'value', name: 'Blocks proposed', nameLocation: 'middle',
+                 nameGap: 22, nameTextStyle: { fontSize: 10, color: '#8A8FA8' },
+                 axisLabel: { fontSize: 10, color: '#8A8FA8' },
+                 splitLine: { lineStyle: { color: '#EEF0F4' } } },
+        yAxis: { type: 'category',
+                 data: data.map(function (d) { return d.name; }),
+                 axisLabel: { fontSize: 10, color: '#5A5E7A' },
+                 axisTick: { show: false }, axisLine: { show: false } },
         series: [{
-          type: 'pie', radius: ['45%','72%'], center: ['50%','50%'],
-          label: { show: true, formatter: '{b}\n{c}', fontSize: 11, color: '#5A5E7A' },
-          labelLine: { show: true, length: 10, length2: 8 },
-          data: data
+          type: 'bar', barWidth: '55%',
+          data: data.map(function (d) {
+            return { value: d.value, itemStyle: { color: d.itemStyle.color,
+                     borderRadius: [0, 4, 4, 0] } };
+          }),
+          label: { show: true, position: 'right', fontSize: 10, color: '#5A5E7A' }
         }]
       });
     })
