@@ -841,7 +841,7 @@
     <div class="section-heading">Cases waiting for your help</div>
     <p class="section-sub">Every case is verified by a licensed trustee. Your donation goes
        directly to the person who needs it — tracked every step of the way.</p>
-    <div id="landing-cases" class="story-grid" style="margin-top:24px">
+    <div id="landing-cases" class="story-grid" style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
       <p style="color:#8A8FA8;font-size:14px">Loading cases…</p>
     </div>
     <script>
@@ -858,20 +858,33 @@
           }
           var icons = { medical:'\uD83C\uDFE5', education:'\uD83D\uDCDA',
                         shelter:'\uD83C\uDFE0', food:'\uD83C\uDF5B', emergency:'\u26A0\uFE0F' };
-          box.innerHTML = cases.slice(0, 3).map(function (c) {
+          box.innerHTML = cases.slice(0, 4).map(function (c) {
             var need = c.amount_needed || 0, got = c.amount_funded || 0;
             var pct = need ? +((got / need) * 100).toFixed(1) : 0;
-            return '<div class="story-card"><div class="story-icon">' +
-              (icons[(c.category || '').toLowerCase()] || '\u2764\uFE0F') + '</div>' +
-              '<div class="story-cat">' + (c.category || 'General') + '</div>' +
-              '<div class="story-title">' + (c.title || '') + '</div>' +
-              '<div class="story-text">' + (c.description || '') + '</div>' +
-              '<div class="story-amounts"><span>Raised: <strong>$' + got.toLocaleString() +
-              '</strong></span><span>Goal: <strong>$' + need.toLocaleString() + '</strong></span></div>' +
-              '<div class="progress-wrap"><div class="progress-bar" style="width:' +
-              Math.min(pct, 100) + '%"></div></div>' +
-              '<div class="story-meta">' + pct + '% funded</div>' +
-              '<a href="login.html" class="btn btn-primary btn-sm btn-block">Donate</a></div>';
+            var icons = { medical:'\uD83C\uDFE5', education:'\uD83D\uDCDA',
+                          shelter:'\uD83C\uDFE0', food:'\uD83C\uDF5B',
+                          emergency:'\u26A0\uFE0F' };
+            var tints = { medical:'#FDEAEA', education:'#E8F1FD', shelter:'#E9F7F1',
+                          food:'#FDF3E3', emergency:'#FCE9E9' };
+            var cat = (c.category || 'general').toLowerCase();
+            return '<div class="story-card">' +
+              '<div class="story-img" style="background:' + (tints[cat] || '#F1F2F7') + '">' +
+                (icons[cat] || '\u2764\uFE0F') + '</div>' +
+              '<div class="story-body">' +
+                '<div class="story-category">' + (c.category || 'General') + '</div>' +
+                '<div class="story-title">' + (c.title || 'Untitled case') + '</div>' +
+                '<div class="story-desc">' + (c.description || '') + '</div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;margin:16px 0 8px">' +
+                  '<span style="color:#6B7688">Raised <strong style="color:#1E7F63">$' +
+                    got.toLocaleString() + '</strong></span>' +
+                  '<span style="color:#6B7688">Goal <strong style="color:#1F2733">$' +
+                    need.toLocaleString() + '</strong></span></div>' +
+                '<div style="height:6px;background:#EEF0F4;border-radius:99px;overflow:hidden">' +
+                  '<div style="height:100%;width:' + Math.min(pct,100) +
+                  '%;background:linear-gradient(90deg,#6C63FF,#3BAAFF);border-radius:99px"></div></div>' +
+                '<div style="font-size:12px;color:#8A8FA8;margin:8px 0 16px">' + pct + '% funded</div>' +
+                '<a href="login.html" class="btn btn-primary btn-sm btn-block">Donate</a>' +
+              '</div></div>';
           }).join('');
         })
         .catch(function () {
@@ -951,62 +964,7 @@
 </section>
 
 <!-- ── TESTIMONIALS ── -->
-<section class="testimonials-section">
-  <div class="section-inner">
-    <div class="section-tag">What People Say</div>
-    <div class="section-heading">Trusted by donors and recipients</div>
 
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <div class="testimonial-text">
-          "For the first time I actually know where my money went. I could see the
-          block hash, the validator that confirmed it, and when the funds reached
-          the family. This is what charity should look like."
-        </div>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar" style="background:var(--primary)">R</div>
-          <div>
-            <div class="testimonial-name">Rakib Hasan</div>
-            <div class="testimonial-role">Donor — Dhaka</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <div class="testimonial-text">
-          "As an NGO we have always struggled with donor trust. CharityChain gave
-          us a way to prove every taka is accounted for. Our donor retention
-          improved dramatically after joining."
-        </div>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar" style="background:var(--success)">S</div>
-          <div>
-            <div class="testimonial-name">Sumaiya Islam</div>
-            <div class="testimonial-role">Program Director — BRAC</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="testimonial-card">
-        <div class="testimonial-stars">★★★★★</div>
-        <div class="testimonial-text">
-          "I was skeptical about online charity. But when I saw the actual blockchain
-          record of my donation — with the transaction hash and everything — I became
-          a regular donor. The transparency is real."
-        </div>
-        <div class="testimonial-author">
-          <div class="testimonial-avatar" style="background:var(--warning)">M</div>
-          <div>
-            <div class="testimonial-name">Mohammad Ali</div>
-            <div class="testimonial-role">Donor — Chittagong</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ── FINAL CTA ── -->
 <section class="cta-section">
@@ -1077,21 +1035,27 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Load live stats
+  // Load live stats from the running chain and database
   try {
-    const epoch = await AdminAPI.getEpoch();
-    if (epoch && epoch.total_blocks) {
-      document.getElementById('stat-blocks').textContent =
-        epoch.total_blocks.toLocaleString();
-    }
-  } catch(e) {}
+    const r = await fetch(location.origin + '/api/consensus/epoch');
+    const epoch = await r.json();
+    const h = epoch.chain_height || epoch.total_blocks || 0;
+    document.getElementById('stat-blocks').textContent = h.toLocaleString();
+  } catch(e) { console.error("stats:", e); }
+
+  try {
+    const r2 = await fetch(location.origin + '/api/cases/approved');
+    const cases = await r2.json() || [];
+    document.getElementById('stat-cases').textContent = cases.length;
+    const vol = cases.reduce(function (a, c) { return a + (c.amount_funded || 0); }, 0);
+    document.getElementById('stat-volume').textContent = vol.toLocaleString();
+  } catch(e) { console.error("stats:", e); }
 
   try {
     const chain = await BlockchainAPI.getChain();
-    if (chain && chain.length) {
-      document.getElementById('stat-donations').textContent = chain.length;
-    }
-  } catch(e) {}
+    document.getElementById('stat-donations').textContent =
+      (chain && chain.length) ? chain.length : 0;
+  } catch(e) { console.error("stats:", e); }
 });
 
 function goTrack() {

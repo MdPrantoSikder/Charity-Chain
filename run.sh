@@ -10,12 +10,17 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 echo "[1/7] Stopping anything already running"
 pkill -f uvicorn 2>/dev/null || true
 docker compose -p cbbft down >/dev/null 2>&1 || true
-docker rm -f charitychain-db >/dev/null 2>&1 || true
 
 echo "[2/7] Starting PostgreSQL"
-docker run -d --name charitychain-db \
-  -e POSTGRES_PASSWORD=charitychain -e POSTGRES_DB=charitychain \
-  -p 5432:5432 postgres:16-alpine >/dev/null
+if docker ps -a --format '{{.Names}}' | grep -q '^charitychain-db$'; then
+  docker start charitychain-db >/dev/null 2>&1 || true
+  echo "      reusing existing database"
+else
+  docker run -d --name charitychain-db \
+    -e POSTGRES_PASSWORD=charitychain -e POSTGRES_DB=charitychain \
+    -p 5432:5432 postgres:16-alpine >/dev/null
+  echo "      new database created"
+fi
 sleep 8
 
 echo "[3/7] Generating CB-BFT genesis for $NODES validators"
