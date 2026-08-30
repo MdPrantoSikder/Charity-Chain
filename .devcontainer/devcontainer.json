@@ -1,0 +1,16 @@
+{
+  "name": "CharityChain",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/java:1": { "version": "21" }
+  },
+  "hostRequirements": { "cpus": 4, "memory": "16gb" },
+  "forwardPorts": [8000, 8545, 5432],
+  "portsAttributes": {
+    "8000": { "label": "CharityChain API", "visibility": "public" },
+    "8545": { "label": "Besu JSON-RPC", "visibility": "public" }
+  },
+  "postCreateCommand": "pip install -r backend/requirements.txt",
+  "remoteUser": "vscode"
+}
