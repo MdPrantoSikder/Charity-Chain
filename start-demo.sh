@@ -39,4 +39,5 @@ echo "[5/5] Starting the API"
 cd ../backend
 export DATABASE_URL="postgresql+asyncpg://postgres:charitychain@localhost:5432/charitychain"
 export HARDHAT_RPC_URL="http://127.0.0.1:8545"
+export HARDHAT_ENABLED="true"
 uvicorn main:app --host 0.0.0.0 --port 8000

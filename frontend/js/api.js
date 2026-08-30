@@ -1,4 +1,6 @@
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = (location.hostname.endsWith('.app.github.dev'))
+  ? location.origin.replace(/-\d+\.app\.github\.dev$/, '-8000.app.github.dev')
+  : 'http://127.0.0.1:8000';
 
 async function apiFetch(endpoint, options = {}) {
   const token = Auth.getToken();
