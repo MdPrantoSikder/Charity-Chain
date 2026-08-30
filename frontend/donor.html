@@ -729,6 +729,18 @@ async function loadStats() {
     document.getElementById('stat-impact').textContent    = completed * 3;
     document.getElementById('chart-total-all').textContent = '$' + total.toLocaleString();
 
+    var now = new Date();
+    var thisM = 0, lastM = 0;
+    myDonations.forEach(function (d) {
+      if (!d.created_at) return;
+      var dt = new Date(d.created_at);
+      var diff = (now.getFullYear() - dt.getFullYear()) * 12 + (now.getMonth() - dt.getMonth());
+      if (diff === 0) thisM += (d.amount || 0);
+      else if (diff === 1) lastM += (d.amount || 0);
+    });
+    document.getElementById('chart-this').textContent = '$' + thisM.toLocaleString();
+    document.getElementById('chart-last').textContent = '$' + lastM.toLocaleString();
+
     renderRecentDonations();
     renderDonationsTable();
   } catch (err) {
