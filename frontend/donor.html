@@ -482,16 +482,14 @@
         <div class="pool-viz-wrap">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">🧠 CB-BFT Validator Pools</div>
+              <div class="card-title">🧠 CB-BFT Proposer Distribution</div>
               <span class="badge badge-primary">Current Epoch</span>
             </div>
             <div class="card-body">
               <div id="pool-echart" style="height:220px"></div>
               <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;justify-content:center">
-                <span class="badge badge-elite">● Elite</span>
-                <span class="badge badge-standard">● Standard</span>
-                <span class="badge badge-observer">● Observer</span>
-                <span class="badge badge-probation">● Probation</span>
+                <span class="badge badge-elite">● Selected (top 30%)</span>
+                <span class="badge" style="background:#EEF0F4;color:#6B7688">● Not selected</span>
               </div>
             </div>
           </div>
@@ -695,6 +693,14 @@ function fillTopbarAvatar() {
 }
 
 /* ── TAB SWITCHING ── */
+function showTab(name) {
+  switchDashTab(name, document.querySelector('.dash-tab[onclick*="' + name + '"]'));
+  document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
+  if (window.event && window.event.currentTarget) {
+    window.event.currentTarget.classList.add('active');
+  }
+}
+
 function switchDashTab(name, btnEl) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
@@ -795,7 +801,7 @@ async function loadChainData() {
 function renderBlocksTable(blocks) {
   const tbody = document.getElementById('blocks-table-body');
   if (!blocks.length) return;
-  tbody.innerHTML = blocks.slice(-10).reverse().map(b => '<tr><td><strong>#' + b.index + '</strong></td><td><span class="hash-copy" onclick="copyHash(\'' + b.block_hash + '\', this)">' + (b.block_hash||'').substring(0,14) + '... 📋</span></td><td style="font-size:12px">' + (b.leader_node||'—') + '</td><td><span class="badge badge-elite">Elite</span></td><td><span class="hash-copy" style="color:var(--teal,#00C9A7)">' + (b.ipfs_cid||'Qm...').substring(0,12) + '...</span></td><td style="color:var(--muted);font-size:12px">' + (b.timestamp ? new Date(b.timestamp).toLocaleString() : '—') + '</td></tr>').join('');
+  tbody.innerHTML = blocks.slice(-10).reverse().map(b => '<tr><td><strong>#' + b.index + '</strong></td><td><span class="hash-copy" onclick="copyHash(\'' + b.block_hash + '\', this)">' + (b.block_hash||'').substring(0,14) + '... 📋</span></td><td style="font-size:12px">' + (b.leader_node||'—') + '</td><td><span class="badge badge-elite">CB-BFT</span></td><td><span class="hash-copy" style="color:var(--teal,#00C9A7)">' + (b.ipfs_cid||'Qm...').substring(0,12) + '...</span></td><td style="color:var(--muted);font-size:12px">' + (b.timestamp ? new Date(b.timestamp).toLocaleString() : '—') + '</td></tr>').join('');
 }
 
 /* ── LOAD NODES ── */
@@ -938,34 +944,37 @@ function drawCategoryChart() {
 function drawPoolChart() {
   var el = document.getElementById('pool-echart');
   if (!el) return;
-
-  if (poolChart) {
-    poolChart.dispose();
-    poolChart = null;
-  }
-
+  if (poolChart) { poolChart.dispose(); poolChart = null; }
   poolChart = echarts.init(el);
-
-  poolChart.setOption({
-    animation: false,
-    tooltip: { trigger: 'item', formatter: '{b}: {c} nodes ({d}%)' },
-    series: [{
-      type: 'pie',
-      radius: ['45%', '72%'],
-      center: ['50%', '50%'],
-      avoidLabelOverlap: false,
-      label: { show: true, formatter: '{b}\n{c} nodes', fontSize: 11, color: '#5A5E7A' },
-      labelLine: { show: true, length: 10, length2: 8 },
-      data: [
-        { value: 3, name: 'Elite',     itemStyle: { color: '#6C63FF' } },
-        { value: 3, name: 'Standard',  itemStyle: { color: '#3BAAFF' } },
-        { value: 2, name: 'Observer',  itemStyle: { color: '#00C9A7' } },
-        { value: 2, name: 'Probation', itemStyle: { color: '#F7A935' } }
-      ],
-      emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.15)' } }
-    }]
-  });
+  var colors = ['#6C63FF','#3BAAFF','#00C9A7','#F7A935','#B0446A','#8A6FE8','#4FB286'];
+  fetch(API_BASE + '/api/nodes')
+    .then(function (r) { return r.json(); })
+    .then(function (nodes) {
+      var data = (nodes || []).filter(function (n) { return (n.proposals || 0) > 0; })
+        .map(function (n, i) {
+          return { value: n.proposals,
+                   name: n.address.substring(0, 8) + '\u2026',
+                   itemStyle: { color: colors[i % colors.length] } };
+        });
+      var idle = (nodes || []).filter(function (n) { return (n.proposals || 0) === 0; }).length;
+      if (idle > 0) data.push({ value: idle, name: 'Not selected',
+                                itemStyle: { color: '#C9CDD8' } });
+      if (data.length === 0) data = [{ value: 1, name: 'No blocks yet',
+                                       itemStyle: { color: '#C9CDD8' } }];
+      poolChart.setOption({
+        animation: false,
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        series: [{
+          type: 'pie', radius: ['45%','72%'], center: ['50%','50%'],
+          label: { show: true, formatter: '{b}\n{c}', fontSize: 11, color: '#5A5E7A' },
+          labelLine: { show: true, length: 10, length2: 8 },
+          data: data
+        }]
+      });
+    })
+    .catch(function (e) { console.error('pool chart', e); });
 }
+
 
 /* ── DONATE MODAL ── */
 function openDonateModal(caseId, title, needed, funded) {
