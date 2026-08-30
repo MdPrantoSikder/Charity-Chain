@@ -1,0 +1,5 @@
+faults,qbft_gini,cbbft_gini,qbft_validators_for_90pct,cbbft_validators_for_90pct
+0,0.030,0.385,14.0,4.2
+1,0.075,0.283,13.0,3.8
+2,0.092,0.309,11.2,4.0
+3,0.024,0.302,8.2,3.6

@@ -1,0 +1,91 @@
+version: '3.8'
+services:
+  node1:
+    image: hyperledger/besu:24.1.0
+    container_name: besu-node1
+    volumes:
+      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
+      - ${HOME}/charitychain-besu/networkFiles/keys/0x945753b1e6420a48837a1da2ad17d2155bec09bc:/opt/besu/keys
+      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/genesis.json
+      --node-private-key-file=/opt/besu/keys/key
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled
+      --rpc-http-api=ETH,NET,IBFT,WEB3,MINER
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8545
+      --rpc-http-cors-origins=*
+      --host-allowlist=*
+      --p2p-host=172.20.0.2
+      --p2p-port=30303
+      --discovery-enabled=false
+    ports:
+      - "8545:8545"
+    networks:
+      besu-net:
+        ipv4_address: 172.20.0.2
+
+  node2:
+    image: hyperledger/besu:24.1.0
+    container_name: besu-node2
+    volumes:
+      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
+      - ${HOME}/charitychain-besu/networkFiles/keys/0x1255902d16c0644104448631cbd1470a1a683d6c:/opt/besu/keys
+      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/genesis.json
+      --node-private-key-file=/opt/besu/keys/key
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=false
+      --p2p-host=172.20.0.3
+      --p2p-port=30303
+      --discovery-enabled=false
+    networks:
+      besu-net:
+        ipv4_address: 172.20.0.3
+
+  node3:
+    image: hyperledger/besu:24.1.0
+    container_name: besu-node3
+    volumes:
+      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
+      - ${HOME}/charitychain-besu/networkFiles/keys/0x9cb9d8cc18c3df659a2ba9ff683909103725f6e6:/opt/besu/keys
+      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/genesis.json
+      --node-private-key-file=/opt/besu/keys/key
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=false
+      --p2p-host=172.20.0.4
+      --p2p-port=30303
+      --discovery-enabled=false
+    networks:
+      besu-net:
+        ipv4_address: 172.20.0.4
+
+  node4:
+    image: hyperledger/besu:24.1.0
+    container_name: besu-node4
+    volumes:
+      - ${HOME}/charitychain-besu/networkFiles/genesis.json:/genesis.json
+      - ${HOME}/charitychain-besu/networkFiles/keys/0x094503f6dae81ebe11e85c1713c04daefe0562c9:/opt/besu/keys
+      - ${HOME}/besu-network/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/genesis.json
+      --node-private-key-file=/opt/besu/keys/key
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=false
+      --p2p-host=172.20.0.5
+      --p2p-port=30303
+      --discovery-enabled=false
+    networks:
+      besu-net:
+        ipv4_address: 172.20.0.5
+
+networks:
+  besu-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

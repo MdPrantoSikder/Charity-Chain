@@ -1,0 +1,57 @@
+From 815bd68bcabe7fa125e8206834582732150dfa56 Mon Sep 17 00:00:00 2001
+From: Pranto <your@email.com>
+Date: Fri, 14 Aug 2026 02:02:29 +0600
+Subject: [PATCH 1/6] Package Besu 26.5.0 build as charitychain/cbbft-besu
+ image
+
+---
+ .dockerignore    | 15 +++------------
+ Dockerfile.cbbft | 14 ++++++++++++++
+ 2 files changed, 17 insertions(+), 12 deletions(-)
+ create mode 100644 Dockerfile.cbbft
+
+diff --git a/.dockerignore b/.dockerignore
+index a31d4bf944..2103a785bb 100644
+--- a/.dockerignore
++++ b/.dockerignore
+@@ -1,13 +1,4 @@
+-.github
++.git
+ .gradle
+-.idea
+-.vertx
+-build
+-kubernetes
+-Dockerfile
+-
+-#Exclude doc related resources
+-docs
+-*.md
+-
+-Jenkins*
+\ No newline at end of file
++build/tmp
++build/reports
+diff --git a/Dockerfile.cbbft b/Dockerfile.cbbft
+new file mode 100644
+index 0000000000..b85332b8f8
+--- /dev/null
++++ b/Dockerfile.cbbft
+@@ -0,0 +1,14 @@
++FROM eclipse-temurin:21-jre
++
++RUN adduser --disabled-password --gecos "" --home /opt/besu besu \
++ && chown besu:besu /opt/besu
++
++COPY --chown=besu:besu build/install/besu /opt/besu
++
++USER besu
++WORKDIR /opt/besu
++ENV PATH="/opt/besu/bin:${PATH}"
++
++EXPOSE 8545 8546 30303/tcp 30303/udp
++
++ENTRYPOINT ["besu"]
+-- 
+2.53.0
+

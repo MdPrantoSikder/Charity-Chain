@@ -1,0 +1,183 @@
+From 78b9de50d3a783da8af466bacb9b74c33b8584ac Mon Sep 17 00:00:00 2001
+From: Pranto <your@email.com>
+Date: Fri, 14 Aug 2026 11:26:43 +0600
+Subject: [PATCH 3/6] Stage 3 verified: CbbftProposerSelector active on live
+ chain, 106 invocations
+
+---
+ app/build.gradle                              |  1 +
+ .../controller/QbftBesuControllerBuilder.java |  5 +-
+ .../besu/config/JsonQbftConfigOptions.java    |  8 +++
+ .../besu/config/QbftConfigOptions.java        |  9 +++
+ consensus/cbbft/build.gradle                  |  1 +
+ .../cbbft/CbbftProposerSelector.java          | 65 +++++++++++++++++++
+ 6 files changed, 88 insertions(+), 1 deletion(-)
+ create mode 100644 consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+
+diff --git a/app/build.gradle b/app/build.gradle
+index adee8c66f5..d13409ea83 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -44,6 +44,7 @@ dependencies {
+   implementation project(':consensus:ibft')
+   implementation project(':consensus:ibftlegacy')
+   implementation project(':consensus:merge')
++  implementation project(':consensus:cbbft')
+   implementation project(':consensus:qbft')
+   implementation project(':consensus:qbft-core')
+   implementation project(':crypto:services')
+diff --git a/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java b/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java
+index 7fbf58d0ba..04bbbf7176 100644
+--- a/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java
++++ b/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java
+@@ -37,6 +37,7 @@ import org.hyperledger.besu.consensus.common.bft.MessageTracker;
+ import org.hyperledger.besu.consensus.common.bft.RoundTimer;
+ import org.hyperledger.besu.consensus.common.bft.UniqueMessageMulticaster;
+ import org.hyperledger.besu.consensus.common.bft.blockcreation.BftMiningCoordinator;
++import org.hyperledger.besu.consensus.cbbft.CbbftProposerSelector;
+ import org.hyperledger.besu.consensus.common.bft.blockcreation.BftProposerSelector;
+ import org.hyperledger.besu.consensus.common.bft.blockcreation.ProposerSelector;
+ import org.hyperledger.besu.consensus.common.bft.network.ValidatorPeers;
+@@ -232,7 +233,9 @@ public class QbftBesuControllerBuilder extends BesuControllerBuilder {
+     final QbftBlockInterface qbftBlockInterface = new QbftBlockInterfaceAdaptor(bftBlockInterface);
+ 
+     final ProposerSelector proposerSelector =
+-        new BftProposerSelector(blockchain, bftBlockInterface, true, validatorProvider);
++        qbftConfig.isCbbftProposerSelection()
++            ? new CbbftProposerSelector(blockchain, bftBlockInterface, true, validatorProvider)
++            : new BftProposerSelector(blockchain, bftBlockInterface, true, validatorProvider);
+ 
+     // NOTE: peers should not be used for accessing the network as it does not enforce the
+     // "only send once" filter applied by the UniqueMessageMulticaster.
+diff --git a/config/src/main/java/org/hyperledger/besu/config/JsonQbftConfigOptions.java b/config/src/main/java/org/hyperledger/besu/config/JsonQbftConfigOptions.java
+index 3db29e5b76..19c987dcf6 100644
+--- a/config/src/main/java/org/hyperledger/besu/config/JsonQbftConfigOptions.java
++++ b/config/src/main/java/org/hyperledger/besu/config/JsonQbftConfigOptions.java
+@@ -33,6 +33,9 @@ public class JsonQbftConfigOptions extends JsonBftConfigOptions implements QbftC
+   /** The constant START_BLOCK. */
+   public static final String START_BLOCK = "startblock";
+ 
++  /** The constant CBBFT_PROPOSER_SELECTION. */
++  public static final String CBBFT_PROPOSER_SELECTION = "cbbftproposerselection";
++
+   /**
+    * Instantiates a new Json QBFT config options.
+    *
+@@ -52,6 +55,11 @@ public class JsonQbftConfigOptions extends JsonBftConfigOptions implements QbftC
+     return JsonUtil.getLong(bftConfigRoot, START_BLOCK);
+   }
+ 
++  @Override
++  public boolean isCbbftProposerSelection() {
++    return JsonUtil.getBoolean(bftConfigRoot, CBBFT_PROPOSER_SELECTION, false);
++  }
++
+   @Override
+   public Map<String, Object> asMap() {
+     final Map<String, Object> map = super.asMap();
+diff --git a/config/src/main/java/org/hyperledger/besu/config/QbftConfigOptions.java b/config/src/main/java/org/hyperledger/besu/config/QbftConfigOptions.java
+index 6513595434..db7cf58e3e 100644
+--- a/config/src/main/java/org/hyperledger/besu/config/QbftConfigOptions.java
++++ b/config/src/main/java/org/hyperledger/besu/config/QbftConfigOptions.java
+@@ -36,6 +36,15 @@ public interface QbftConfigOptions extends BftConfigOptions {
+     return getValidatorContractAddress().isPresent();
+   }
+ 
++  /**
++   * Whether CB-BFT attribute-based proposer selection replaces round-robin.
++   *
++   * @return true if CB-BFT proposer selection is enabled, false otherwise
++   */
++  default boolean isCbbftProposerSelection() {
++    return false;
++  }
++
+   /**
+    * Gets start block.
+    *
+diff --git a/consensus/cbbft/build.gradle b/consensus/cbbft/build.gradle
+index 71c830cff8..893dd2eeb0 100644
+--- a/consensus/cbbft/build.gradle
++++ b/consensus/cbbft/build.gradle
+@@ -20,6 +20,7 @@ dependencies {
+   implementation project(':ethereum:core')
+ 
+   implementation 'com.google.guava:guava'
++  implementation 'org.slf4j:slf4j-api'
+ 
+   testImplementation project(path: ':consensus:common', configuration: 'testSupportArtifacts')
+   testImplementation project(path: ':ethereum:core', configuration: 'testSupportArtifacts')
+diff --git a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+new file mode 100644
+index 0000000000..283d00822b
+--- /dev/null
++++ b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+@@ -0,0 +1,65 @@
++/*
++ * Copyright contributors to Besu.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License. You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software distributed under the License
++ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
++ * or implied. See the License for the specific language governing permissions and limitations under
++ * the License.
++ *
++ * SPDX-License-Identifier: Apache-2.0
++ */
++package org.hyperledger.besu.consensus.cbbft;
++
++import org.hyperledger.besu.consensus.common.BlockInterface;
++import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
++import org.hyperledger.besu.consensus.common.bft.blockcreation.BftProposerSelector;
++import org.hyperledger.besu.consensus.common.bft.blockcreation.ProposerSelector;
++import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
++import org.hyperledger.besu.datatypes.Address;
++import org.hyperledger.besu.ethereum.chain.Blockchain;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++/**
++ * CB-BFT proposer selection.
++ *
++ * <p>Stage 3: delegates entirely to {@link BftProposerSelector}, so behaviour is identical to QBFT.
++ * This exists to prove the wiring in isolation. CRITIC scoring, adaptive clustering and pool
++ * selection arrive in Stage 5, and must derive every input from block headers only - anything
++ * observed locally will differ between nodes and the chain will fork.
++ */
++public class CbbftProposerSelector implements ProposerSelector {
++
++  private static final Logger LOG = LoggerFactory.getLogger(CbbftProposerSelector.class);
++
++  private final ProposerSelector delegate;
++
++  /**
++   * Construct a CB-BFT proposer selector.
++   *
++   * @param blockchain the blockchain, source of all header-derived attributes
++   * @param blockInterface used to recover the proposer of any prior block
++   * @param changeEachBlock whether the proposer rotates on every block
++   * @param validatorProvider the current validator set
++   */
++  public CbbftProposerSelector(
++      final Blockchain blockchain,
++      final BlockInterface blockInterface,
++      final boolean changeEachBlock,
++      final ValidatorProvider validatorProvider) {
++    this.delegate =
++        new BftProposerSelector(blockchain, blockInterface, changeEachBlock, validatorProvider);
++  }
++
++  @Override
++  public Address selectProposerForRound(final ConsensusRoundIdentifier roundIdentifier) {
++    final Address proposer = delegate.selectProposerForRound(roundIdentifier);
++    LOG.info("CBBFT selector active: {} proposer={}", roundIdentifier, proposer);
++    return proposer;
++  }
++}
+-- 
+2.53.0
+

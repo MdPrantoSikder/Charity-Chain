@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Live Besu Network</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+    body { background: var(--bg); font-family: 'Inter', sans-serif; }
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    .page-title { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .page-sub { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+    .live-badge { display: inline-flex; align-items: center; gap: 6px; background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 24px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .section-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .nodes-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 32px; }
+    .node-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+    .node-icon { font-size: 24px; margin-bottom: 8px; }
+    .node-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .node-addr { font-size: 10px; color: var(--muted); margin-top: 4px; word-break: break-all; }
+    .node-status { margin-top: 8px; font-size: 11px; font-weight: 600; color: #16a34a; }
+    .blocks-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .blocks-table th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .blocks-table td { padding: 12px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+    .blocks-table tr:hover td { background: #f8fafc; }
+    .hash { font-family: monospace; font-size: 11px; color: #6366f1; cursor: pointer; }
+    .hash:hover { text-decoration: underline; }
+    .badge-on { background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge-off { background: #fef3cd; color: #d97706; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .refresh-btn { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .refresh-btn:hover { opacity: 0.9; }
+    .tx-section { margin-top: 32px; }
+    .tx-input-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .tx-input-row input { flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:monospace; }
+    pre#tx-result { background:#1e1e2e; color:#cdd6f4; padding:16px; border-radius:10px; font-size:12px; overflow-x:auto; display:none; }
+    .error-msg { color: #dc2626; font-size: 13px; padding: 12px; background: #fef2f2; border-radius: 8px; margin-bottom:16px; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="live-badge"><div class="live-dot"></div> LIVE NETWORK</div>
+  <div class="page-title">🔗 Hyperledger Besu — IBFT2 Network</div>
+  <div class="page-sub">4-node private blockchain • CharityChain ABPC Consensus • Contract: 0x6d68d755176152dAF855e0E00f68CB2E648854D4</div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Besu Block Height</div>
+      <div class="stat-value" id="block-number">—</div>
+      <div class="stat-sub">Auto-updates every 5s</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Network</div>
+      <div class="stat-value" style="font-size:18px">Chain 1337</div>
+      <div class="stat-sub">Private IBFT2</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Validator Nodes</div>
+      <div class="stat-value">4</div>
+      <div class="stat-sub">IBFT2 Quorum ≥ 3</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">On-Chain Donations</div>
+      <div class="stat-value" id="onchain-count">—</div>
+      <div class="stat-sub" id="total-count"></div>
+    </div>
+  </div>
+
+  <div class="section-title">🖥️ Validator Nodes</div>
+  <div class="nodes-grid">
+    <div class="node-card">
+      <div class="node-icon">⛓️</div>
+      <div class="node-name">Validator Node 1</div>
+      <div class="node-addr">0x213364cebd907a9f9b8aF128b7666650699c7C9E</div>
+      <div class="node-status">● Active (RPC + Miner)</div>
+    </div>
+    <div class="node-card">
+      <div class="node-icon">⛓️</div>
+      <div class="node-name">Validator Node 2</div>
+      <div class="node-addr">0x51DBFD63ecd7858F108976Bd426D5eDD8492Dc5A</div>
+      <div class="node-status">● Active</div>
+    </div>
+    <div class="node-card">
+      <div class="node-icon">⛓️</div>
+      <div class="node-name">Validator Node 3</div>
+      <div class="node-addr">0x6A30488Fa4FafD79b922318fdB82F0a0e9d7e167</div>
+      <div class="node-status">● Active</div>
+    </div>
+    <div class="node-card">
+      <div class="node-icon">⛓️</div>
+      <div class="node-name">Validator Node 4</div>
+      <div class="node-addr">0x6B9d65Db5ec546e11e63fF3b812024919bB7beb3</div>
+      <div class="node-status">● Active</div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    📦 Donation Transactions on Besu
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+  <div id="error-msg"></div>
+  <table class="blocks-table">
+    <thead>
+      <tr>
+        <th>ABPC Block</th>
+        <th>Chain Lock TX</th>
+        <th>Chain Block TX</th>
+        <th>Chain Milestone TX</th>
+        <th>Leader</th>
+        <th>Status</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="blocks-tbody">
+      <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tx-section">
+    <div class="section-title">🔍 Verify Transaction on Besu</div>
+    <div class="tx-input-row">
+      <input id="tx-input" type="text" placeholder="Paste chain tx hash to verify on Besu (e.g. 42f187...)"/>
+      <button class="refresh-btn" onclick="verifyTx()">Verify on Besu</button>
+    </div>
+    <pre id="tx-result"></pre>
+  </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+const BESU = 'http://127.0.0.1:8545';
+let token = localStorage.getItem('cc_token');
+
+async function besuCall(method, params=[]) {
+  const r = await fetch(BESU, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({jsonrpc:'2.0',method,params,id:1})
+  });
+  const d = await r.json();
+  return d.result;
+}
+
+async function loadBesuStats() {
+  try {
+    const hex = await besuCall('eth_blockNumber');
+    document.getElementById('block-number').textContent = parseInt(hex,16).toLocaleString();
+  } catch(e) {
+    document.getElementById('block-number').textContent = 'offline';
+  }
+}
+
+async function loadData() {
+  await loadBesuStats();
+  const errDiv = document.getElementById('error-msg');
+  errDiv.innerHTML = '';
+
+  if (!token) {
+    errDiv.innerHTML = '<div class="error-msg">Not logged in — please <a href="admin.html">login as admin</a> first, then return here</div>';
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API}/api/transparency/audit`, {
+      headers: {Authorization: `Bearer ${token}`}
+    });
+    const data = await r.json();
+    const donations = Array.isArray(data) ? data.filter(d => d.event_type === 'donation_confirmed') : [];
+
+    let onChainCount = 0;
+    const tbody = document.getElementById('blocks-tbody');
+
+    if (!donations.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No donations yet — make a donation to see on-chain transactions</td></tr>';
+      document.getElementById('onchain-count').textContent = '0';
+      return;
+    }
+
+    // Audit log returns oldest-first; reverse so newest shows at top.
+    // We assign block numbers based on original order (oldest = #1).
+    const totalCount = donations.length;
+    const rows = donations.slice().reverse().map((d, i) => {
+      const meta = d.meta || {};
+      const lockTx      = meta.chain_lock_tx      || meta.chain_lock      || '';
+      const blockTx     = meta.chain_block_tx     || meta.chain_block     || '';
+      const milestoneTx = meta.chain_milestone_tx || meta.chain_milestone || '';
+      const onChain     = meta.on_chain === true;
+
+      if (onChain) onChainCount++;
+
+      // Block number: newest donation = totalCount, oldest = 1
+      const blockNum = totalCount - i;
+
+      const short = h => h ? h.slice(0,8) + '...' + h.slice(-6) : '—';
+      const hashCell = h => h && h.length > 10 && !h.startsWith('mock_')
+        ? `<span class="hash" onclick="document.getElementById('tx-input').value='0x${h}';verifyTx()" title="Click to verify on Besu: ${h}">${short(h)}</span>`
+        : `<span style="color:var(--muted);font-size:11px">${h ? 'simulated' : '—'}</span>`;
+
+      // Use d.timestamp (audit log field), fall back to d.created_at
+      const rawTime = d.timestamp || d.created_at;
+      const time = rawTime ? new Date(rawTime).toLocaleTimeString() : '—';
+
+      return `<tr>
+        <td><strong>#${blockNum}</strong></td>
+        <td>${hashCell(lockTx)}</td>
+        <td>${hashCell(blockTx)}</td>
+        <td>${hashCell(milestoneTx)}</td>
+        <td>${meta.leader || d.actor_id || '—'}</td>
+        <td>${onChain ? '<span class="badge-on">✓ On-Chain</span>' : '<span class="badge-off">Simulated</span>'}</td>
+        <td>${time}</td>
+      </tr>`;
+    }).join('');
+
+    tbody.innerHTML = rows;
+    document.getElementById('onchain-count').textContent = onChainCount;
+    document.getElementById('total-count').textContent = `of ${totalCount} total`;
+
+  } catch(e) {
+    errDiv.innerHTML = `<div class="error-msg">Error loading data: ${e.message}</div>`;
+  }
+}
+
+async function verifyTx() {
+  let hash = document.getElementById('tx-input').value.trim();
+  if (!hash) return;
+  if (!hash.startsWith('0x')) hash = '0x' + hash;
+
+  const result = document.getElementById('tx-result');
+  result.style.display = 'block';
+  result.textContent = 'Querying Besu network...';
+
+  try {
+    const [tx, receipt] = await Promise.all([
+      besuCall('eth_getTransactionByHash', [hash]),
+      besuCall('eth_getTransactionReceipt', [hash])
+    ]);
+
+    if (!tx) {
+      result.textContent = '❌ Transaction not found on Besu network.';
+      return;
+    }
+
+    result.textContent = JSON.stringify({
+      '✅ VERIFIED ON BESU': true,
+      hash: tx.hash,
+      blockNumber: parseInt(tx.blockNumber, 16),
+      from: tx.from,
+      to: tx.to + ' (CharityChain Contract)',
+      status: receipt?.status === '0x1' ? '✅ SUCCESS' : '❌ FAILED',
+      gasUsed: receipt ? parseInt(receipt.gasUsed, 16) : null,
+      network: 'Private Besu IBFT2 — Chain 1337',
+    }, null, 2);
+  } catch(e) {
+    result.textContent = 'Error: ' + e.message;
+  }
+}
+
+loadData();
+setInterval(loadBesuStats, 5000);
+</script>
+</body>
+</html>

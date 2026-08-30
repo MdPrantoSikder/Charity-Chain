@@ -1,0 +1,5 @@
+faults,qbft_interval_mean,qbft_interval_sd,cbbft_interval_mean,cbbft_interval_sd,advantage_pct,qbft_tps_mean,cbbft_tps_mean,qbft_blocks_mean,cbbft_blocks_mean
+0,1.997,0.015,2.005,0.012,-0.4,4.72,4.68,75.6,75.2
+1,2.241,0.007,2.054,0.017,8.3,4.72,4.69,67.0,73.2
+2,2.894,0.071,2.166,0.014,25.1,4.50,4.72,52.2,69.6
+3,3.989,0.318,2.513,0.131,37.0,4.14,4.73,38.0,60.2

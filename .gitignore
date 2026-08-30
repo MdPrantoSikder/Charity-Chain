@@ -1,0 +1,31 @@
+# secrets
+.env
+*.env
+!.env.example
+
+# python
+venv/
+*/venv/
+__pycache__/
+*.pyc
+
+# node
+node_modules/
+*/node_modules/
+
+# blockchain build artifacts
+blockchain/artifacts/
+blockchain/cache/
+data/
+wsl-setup/networkFiles/
+wsl-setup/node*/data/
+
+# db dumps
+*.sql
+
+# ide
+.idea/
+.vscode/
+
+# archives
+archive_*.tar.gz

@@ -1,0 +1,64 @@
+From ae047f6318796e033b46ef6a7cac19d8aef2dc21 Mon Sep 17 00:00:00 2001
+From: Pranto <your@email.com>
+Date: Fri, 14 Aug 2026 10:48:27 +0600
+Subject: [PATCH 2/6] Add consensus:cbbft module skeleton
+
+---
+ consensus/cbbft/build.gradle | 32 ++++++++++++++++++++++++++++++++
+ settings.gradle              |  1 +
+ 2 files changed, 33 insertions(+)
+ create mode 100644 consensus/cbbft/build.gradle
+
+diff --git a/consensus/cbbft/build.gradle b/consensus/cbbft/build.gradle
+new file mode 100644
+index 0000000000..71c830cff8
+--- /dev/null
++++ b/consensus/cbbft/build.gradle
+@@ -0,0 +1,32 @@
++apply plugin: 'java-library'
++
++jar {
++  archiveBaseName = calculateArtifactId(project)
++  manifest {
++    attributes(
++      'Specification-Title': archiveBaseName,
++      'Specification-Version': project.version,
++      'Implementation-Title': archiveBaseName,
++      'Implementation-Version': calculateVersion(),
++      'Commit-Hash': getGitCommitDetails(40).hash
++      )
++  }
++}
++
++dependencies {
++  implementation project(':config')
++  implementation project(':consensus:common')
++  implementation project(':datatypes')
++  implementation project(':ethereum:core')
++
++  implementation 'com.google.guava:guava'
++
++  testImplementation project(path: ':consensus:common', configuration: 'testSupportArtifacts')
++  testImplementation project(path: ':ethereum:core', configuration: 'testSupportArtifacts')
++  testImplementation project(':testutil')
++
++  testImplementation 'org.assertj:assertj-core'
++  testImplementation 'org.junit.jupiter:junit-jupiter'
++  testImplementation 'org.mockito:mockito-core'
++  testImplementation 'org.mockito:mockito-junit-jupiter'
++}
+diff --git a/settings.gradle b/settings.gradle
+index 1b61b100c6..cefbde7082 100644
+--- a/settings.gradle
++++ b/settings.gradle
+@@ -32,6 +32,7 @@ include 'consensus:ibft'
+ include 'consensus:ibftlegacy'
+ include 'consensus:merge'
+ include 'consensus:qbft'
++include 'consensus:cbbft'
+ include 'consensus:qbft-core'
+ include 'datatypes'
+ include 'crypto:algorithms'
+-- 
+2.53.0
+

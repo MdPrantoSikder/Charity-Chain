@@ -1,0 +1,168 @@
+From 2bc48f4939d564d7ae310673f88c55ae2bfebdf3 Mon Sep 17 00:00:00 2001
+From: Pranto <your@email.com>
+Date: Fri, 14 Aug 2026 22:46:07 +0600
+Subject: [PATCH 6/6] Stage 5 complete: deterministic attribute-based proposer
+ selection, 2.0s blocks, 357 sequences verified
+
+---
+ .../cbbft/CbbftProposerSelector.java          | 97 ++++++++++++++++---
+ 1 file changed, 82 insertions(+), 15 deletions(-)
+
+diff --git a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+index e247dcb6b2..4bbab29e84 100644
+--- a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
++++ b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+@@ -27,6 +27,7 @@ import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
+ import org.hyperledger.besu.ethereum.chain.Blockchain;
+ import org.hyperledger.besu.ethereum.core.BlockHeader;
+ 
++import java.math.BigInteger;
+ import java.util.ArrayList;
+ import java.util.Collections;
+ import java.util.LinkedHashMap;
+@@ -134,7 +135,7 @@ public class CbbftProposerSelector implements ProposerSelector {
+       if (pa != null) {
+         pa.proposed++;
+         if (h.getGasLimit() > 0) {
+-          pa.gasWadSum += (h.getGasUsed() * WAD) / h.getGasLimit();
++          pa.gasWadSum += wdiv(h.getGasUsed(), h.getGasLimit());
+         }
+         if (n > 1 && round0Only) {
+           blockchain
+@@ -192,30 +193,70 @@ public class CbbftProposerSelector implements ProposerSelector {
+    */
+   private static final long WAD = 1_000_000_000_000_000_000L;
+ 
++  /** WAD as a BigInteger, for square roots whose intermediates exceed 64 bits. */
++  private static final BigInteger BIG_WAD = BigInteger.valueOf(WAD);
++
+   /** Multiply two WAD values, removing the extra scale factor. */
+   private static long wmul(final long a, final long b) {
+-    return (a * b) / WAD;
++    // a*b reaches 1e36 when both operands approach WAD, which overflows a 64 bit long. Solidity
++    // gets away with the naive form because uint256 has the range; Java does not, so the product
++    // is carried as a 128 bit intermediate and divided down.
++    final boolean negative = (a < 0) ^ (b < 0);
++    final long ua = Math.abs(a);
++    final long ub = Math.abs(b);
++    final long hi = Math.multiplyHigh(ua, ub);
++    final long lo = ua * ub;
++    final long q = divide128(hi, lo, WAD);
++    return negative ? -q : q;
++  }
++
++  /** Divide an unsigned 128 bit value, given as high and low words, by a positive divisor. */
++  private static long divide128(final long hi, final long lo, final long div) {
++    if (hi == 0) {
++      return Long.divideUnsigned(lo, div);
++    }
++    // Long division over 128 bits, one bit at a time. Values here are bounded well below 2^127,
++    // so the shift never loses information.
++    long remainder = 0;
++    long quotient = 0;
++    for (int i = 127; i >= 0; i--) {
++      remainder <<= 1;
++      final long bit = i >= 64 ? (hi >>> (i - 64)) & 1L : (lo >>> i) & 1L;
++      remainder |= bit;
++      if (Long.compareUnsigned(remainder, div) >= 0) {
++        remainder -= div;
++        if (i < 64) {
++          quotient |= 1L << i;
++        }
++      }
++    }
++    return quotient;
+   }
+ 
+   /** Divide two WAD values, restoring the scale factor lost to division. */
+   private static long wdiv(final long a, final long b) {
+-    return b == 0 ? 0 : (a * WAD) / b;
++    if (b == 0) {
++      return 0;
++    }
++    final boolean negative = (a < 0) ^ (b < 0);
++    final long ua = Math.abs(a);
++    final long ub = Math.abs(b);
++    final long hi = Math.multiplyHigh(ua, WAD);
++    final long lo = ua * WAD;
++    final long q = divide128(hi, lo, ub);
++    return negative ? -q : q;
+   }
+ 
+-  /** Integer square root of a WAD value, result WAD scaled. Babylonian iteration. */
++  /**
++   * Square root of a WAD value, result WAD scaled. sqrt(x/WAD)*WAD == sqrt(x*WAD), and x*WAD
++   * exceeds 64 bits, so the intermediate is carried in BigInteger. Called a few times per scoring
++   * pass, so allocation cost is irrelevant next to being provably correct.
++   */
+   private static long wsqrt(final long x) {
+     if (x <= 0) {
+       return 0;
+     }
+-    // sqrt(x/WAD)*WAD == sqrt(x*WAD). Values here are at most WAD, so x*1e9*1e9 fits in long.
+-    final long scaled = (x / 1_000_000_000L) * WAD + ((x % 1_000_000_000L) * WAD) / 1_000_000_000L;
+-    long y = scaled;
+-    long z = (scaled + 1) / 2;
+-    while (z < y) {
+-      y = z;
+-      z = (scaled / z + z) / 2;
+-    }
+-    return y;
++    return BigInteger.valueOf(x).multiply(BIG_WAD).sqrt().longValueExact();
+   }
+ 
+   /** Min-max normalise a column into [0, WAD]. Constant column becomes WAD, never inverted. */
+@@ -336,7 +377,12 @@ public class CbbftProposerSelector implements ProposerSelector {
+    */
+   private static final int SCORING_LAG = 2;
+ 
+-  private static final int CRITERIA = 4;
++  /**
++   * Three CRITIC criteria: cpu, latency, reputation. Seal participation was removed - QBFT excludes
++   * committed seals from the block hash, so nodes legitimately hold the same block with different
++   * seal sets and any score derived from them diverges.
++   */
++  private static final int CRITERIA = 3;
+ 
+   /** Index of the latency criterion, the only cost-type criterion. */
+   private static final int LATENCY = 1;
+@@ -381,7 +427,6 @@ public class CbbftProposerSelector implements ProposerSelector {
+       rawWad[i][LATENCY] =
+           a.latencySamples > 0 ? (a.latencySecSum * WAD) / a.latencySamples : worstLatencyWad;
+       rawWad[i][2] = a.proposed * WAD;
+-      rawWad[i][3] = window > 0 ? (a.seals * WAD) / window : 0L;
+       i++;
+     }
+ 
+@@ -404,6 +449,28 @@ public class CbbftProposerSelector implements ProposerSelector {
+ 
+     final long[] w = criticWeightsWad(norm);
+ 
++    // Diagnostic: dump the exact inputs each node scored on. If two nodes disagree on the
++    // proposer, one of these fields differs, and this names which.
++    if (upToBlock % 5 == 0) {
++      final StringBuilder sb = new StringBuilder();
++      sb.append("CBBFT-RAW seq=").append(upToBlock).append(" nvals=").append(n)
++        .append(" window=").append(window).append(" |");
++      for (final Map.Entry<Address, Attr> e : attrs.entrySet()) {
++        final Attr a = e.getValue();
++        sb.append(' ').append(e.getKey().toString(), 0, 8)
++          .append(":p=").append(a.proposed)
++          .append(",s=").append(a.seals)
++          .append(",g=").append(a.gasWadSum)
++          .append(",l=").append(a.latencySecSum)
++          .append('/').append(a.latencySamples);
++      }
++      sb.append(" | w=");
++      for (int j = 0; j < CRITERIA; j++) {
++        sb.append(w[j]).append(',');
++      }
++      LOG.info(sb.toString());
++    }
++
+     for (int k = 0; k < n; k++) {
+       long f = 0;
+       for (int j = 0; j < CRITERIA; j++) {
+-- 
+2.53.0
+

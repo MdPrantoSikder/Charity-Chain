@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Needy Dashboard</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .col-span-2 { grid-column: span 2; }
+    .col-span-3 { grid-column: span 3; }
+
+    /* ── Dash tabs ── */
+    .dash-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .dash-tab {
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.18s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .dash-tab:hover  { color: var(--text); }
+    .dash-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tab-panel         { display: none; }
+    .tab-panel.active  { display: block; }
+
+    /* ── Case row in table ── */
+    .case-row-action {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* ── Apply form card ── */
+    .apply-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .apply-card-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, var(--primary-subtle), rgba(0,201,167,0.05));
+    }
+
+    .apply-card-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .apply-card-header p {
+      font-size: 13px;
+      color: var(--sub);
+      margin-top: 3px;
+    }
+
+    .apply-card-body { padding: 24px; }
+
+    /* ── IPFS Upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--primary);
+      background: var(--primary-subtle);
+    }
+
+    .upload-icon  { font-size: 32px; margin-bottom: 8px; }
+    .upload-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .upload-desc  { font-size: 12px; color: var(--muted); }
+
+    .upload-zone input[type="file"] { display: none; }
+
+    /* Uploaded files list */
+    .uploaded-files {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .uploaded-file {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    .uploaded-file .file-icon { font-size: 16px; }
+    .uploaded-file .file-name { flex: 1; color: var(--text); font-weight: 500; }
+    .uploaded-file .file-size { color: var(--muted); }
+    .uploaded-file .file-remove {
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    .uploaded-file .file-remove:hover { opacity: 1; }
+
+    /* ── Notification item ── */
+    .notif-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .notif-item:last-child { border-bottom: none; }
+
+    .notif-dot-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .notif-body { flex: 1; }
+    .notif-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .notif-time  { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+
+    /* ── Funds milestone ── */
+    .milestone-track {
+      display: flex;
+      gap: 0;
+      position: relative;
+      margin: 20px 0 8px;
+    }
+
+    .milestone-step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+
+    .milestone-step::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: -50%;
+      right: 50%;
+      height: 3px;
+      background: var(--border);
+      z-index: 0;
+    }
+
+    .milestone-step:first-child::before { display: none; }
+
+    .milestone-step.done::before  { background: var(--success); }
+
+    .ms-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      margin: 0 auto 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .milestone-step.done .ms-dot {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .milestone-step.active .ms-dot {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .ms-label {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ── Category select grid ── */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .cat-btn {
+      padding: 8px 4px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      text-align: center;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--sub);
+      transition: all 0.18s;
+    }
+
+    .cat-btn:hover,
+    .cat-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary-subtle);
+      color: var(--primary);
+    }
+
+    .cat-btn .cat-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ══════════════════════════════════
+       SIDEBAR
+  ═══════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-name">⛓ CharityChain</div>
+      <div class="logo-tagline">Transparent Donations</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="switchTab('overview', this)">
+        <span class="nav-icon">🏠</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="switchTab('mycases', this)">
+        <span class="nav-icon">📋</span> My Cases
+      </div>
+      <div class="nav-item" onclick="switchTab('apply', this)">
+        <span class="nav-icon">✏️</span> Apply for Help
+      </div>
+      <div class="nav-item" onclick="switchTab('documents', this)">
+        <span class="nav-icon">📁</span> My Documents
+      </div>
+      <div class="nav-item" onclick="switchTab('funds', this)">
+        <span class="nav-icon">💵</span> Funds Received
+      </div>
+      <div class="nav-item" onclick="switchTab('notifications', this)">
+        <span class="nav-icon">🔔</span> Messages
+        <span class="nav-badge" id="notif-badge">2</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('profile', this)">
+        <span class="nav-icon">👤</span> Profile
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="user-avatar">N</div>
+        <div class="user-info">
+          <div class="user-name"  id="user-name">Needy</div>
+          <div class="user-role" id="user-role">needy</div>
+        </div>
+      </div>
+      <div class="nav-item" onclick="Auth.logout()" style="margin-top:8px">
+        <span class="nav-icon">🚪</span> Logout
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════ -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title">
+        <h1>Needy Dashboard</h1>
+        <p>Welcome back, <strong id="welcome-name">User</strong> 🌟</p>
+      </div>
+      <div class="topbar-right">
+        <div class="notif-btn" onclick="switchTab('notifications', null)">
+          🔔 <span class="notif-dot"></span>
+        </div>
+        <div class="user-avatar" id="topbar-avatar">N</div>
+      </div>
+    </div>
+
+    <!-- Page body -->
+    <div class="page-body">
+
+      <!-- Tabs -->
+      <div class="dash-tabs">
+        <button class="dash-tab active" onclick="switchTab('overview', this)">Overview</button>
+        <button class="dash-tab" onclick="switchTab('mycases', this)">My Cases</button>
+        <button class="dash-tab" onclick="switchTab('apply', this)">Apply for Help</button>
+        <button class="dash-tab" onclick="switchTab('documents', this)">Documents</button>
+        <button class="dash-tab" onclick="switchTab('funds', this)">Funds Received</button>
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 1 — OVERVIEW
+      ══════════════════════════════ -->
+      <div id="tab-overview" class="tab-panel active">
+
+        <!-- Stat cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple">📋</div>
+            <div class="stat-body">
+              <div class="stat-label">Total Applications</div>
+              <div class="stat-value" id="stat-total">0</div>
+              <div class="stat-sub">All time</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-body">
+              <div class="stat-label">Approved Cases</div>
+              <div class="stat-value" id="stat-approved">0</div>
+              <div class="stat-sub">Total approved</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber">💵</div>
+            <div class="stat-body">
+              <div class="stat-label">Funds Received</div>
+              <div class="stat-value" id="stat-funds">$0</div>
+              <div class="stat-sub">This month</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">⏳</div>
+            <div class="stat-body">
+              <div class="stat-label">Pending Cases</div>
+              <div class="stat-value" id="stat-pending">0</div>
+              <div class="stat-sub">Awaiting approval</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+
+          <!-- My Cases table -->
+          <div class="card col-span-2">
+            <div class="card-header">
+              <div class="card-title">📋 My Cases</div>
+              <span class="card-link" onclick="switchTab('mycases', null)">View All</span>
+            </div>
+            <div class="card-body" style="padding:0">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Case ID</th>
+                      <th>Title</th>
+                      <th>Status</th>
+                      <th>Needed</th>
+                      <th>Funded</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-cases-tbody">
+                    <tr>
+                      <td colspan="6">
+                        <div class="empty-state">
+                          <div class="empty-icon">📋</div>
+                          <div class="empty-title">No cases yet</div>
+                          <div class="empty-desc">Click Apply for Help to submit your first case</div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div style="padding:14px 20px;border-top:1px solid var(--border)">
+              <button class="btn btn-primary" onclick="switchTab('apply', null)">
+                ✏️ Apply for New Case
+              </button>
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div style="display:flex;flex-direction:column;gap:20px">
+
+            <!-- Notifications -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">🔔 Recent Notifications</div>
+                <span class="card-link" onclick="switchTab('notifications', null)">View All</span>
+              </div>
+              <div class="card-body" id="notif-preview">
+                <div class="empty-state" style="padding:24px">
+                  <div class="empty-icon">🔔</div>
+                  <div class="empty-title">No notifications</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload documents quick -->
+            <div class="card" style="background:linear-gradient(135deg,var(--primary),#4338CA);border:none">
+              <div class="card-body" style="text-align:center;padding:24px">
+                <div style="font-size:28px;margin-bottom:10px">🛡️</div>
+                <div style="font-size:14px;font-weight:700;color:white;margin-bottom:6px">
+                  Your verification creates real impact
+                </div>
+                <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:16px">
+                  Upload supporting documents to speed up your case approval
+                </div>
+                <button class="btn btn-white btn-sm" onclick="switchTab('documents', null)"
+                  style="background:white;color:var(--primary);font-weight:700">
+                  📁 Upload Documents
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 2 — MY CASES
+      ══════════════════════════════ -->
+      <div id="tab-mycases" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 All My Cases</div>
+            <button class="btn btn-primary btn-sm" onclick="switchTab('apply', null)">
+              ✏️ Apply for New Case
+            </button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Case ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Needed</th>
+                    <th>Funded</th>
+                    <th>Case Goal</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="all-cases-tbody">
+                  <tr>
+                    <td colspan="8">
+                      <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <div class="empty-title">No cases submitted yet</div>
+                        <div class="empty-desc">Apply for help to get started</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 3 — APPLY FOR HELP
+      ══════════════════════════════ -->
+      <div id="tab-apply" class="tab-panel">
+        <div class="dashboard-grid">
+
+          <!-- Left — Application form -->
+          <div class="col-span-2">
+            <div class="apply-card">
+              <div class="apply-card-header">
+                <h2>✏️ Submit New Case</h2>
+                <p>Fill in all details accurately. Your case will be reviewed by a trustee.</p>
+              </div>
+              <div class="apply-card-body">
+
+                <!-- Error / Success -->
+                <div id="apply-error" class="alert alert-danger" style="display:none">
+                  <span class="alert-icon">❌</span>
+                  <div class="alert-body">
+                    <div class="alert-desc" id="apply-error-msg"></div>
+                  </div>
+                </div>
+                <div id="apply-success" class="alert alert-success" style="display:none">
+                  <span class="alert-icon">✅</span>
+                  <div class="alert-body">
+                    <div class="alert-title">Case Submitted!</div>
+                    <div class="alert-desc">Your case has been submitted and is awaiting trustee review.</div>
+                  </div>
+                </div>
+
+                <!-- Case Title -->
+                <div class="form-group">
+                  <label class="form-label">Case Title <span>*</span></label>
+                  <input type="text" id="apply-title" class="form-input"
+                    placeholder="e.g. Medical Emergency — Heart Surgery for Rafiq"/>
+                </div>
+
+                <!-- Category -->
+                <div class="form-group">
+                  <label class="form-label">Category <span>*</span></label>
+                  <div class="category-grid" id="category-grid">
+                    <div class="cat-btn selected" onclick="selectCategory('Medical', this)">
+                      <span class="cat-icon">🏥</span> Medical
+                    </div>
+                    <div class="cat-btn" onclick="selectCategory('Education', this)">
+                      <span class="cat-icon">📚</span> Education
+                    </div>
+                    <div class="cat-btn" onclick="selectCategory('Food', this)">
+                      <span class="cat-icon">🍽️</span> Food
+                    </div>
+                    <div class="cat-btn" onclick="selectCategory('Shelter', this)">
+                      <span class="cat-icon">🏠</span> Shelter
+                    </div>
+                    <div class="cat-btn" onclick="selectCategory('Emergency', this)">
+                      <span class="cat-icon">🚨</span> Emergency
+                    </div>
+                  </div>
+                  <input type="hidden" id="apply-category" value="Medical"/>
+                </div>
+
+                <!-- Amount -->
+                <div class="form-group">
+                  <label class="form-label">Amount Needed (USD) <span>*</span></label>
+                  <input type="number" id="apply-amount" class="form-input"
+                    placeholder="e.g. 1000" min="1"/>
+                  <div class="form-hint">Enter the total amount required for this case</div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                  <label class="form-label">Description <span>*</span></label>
+                  <textarea id="apply-desc" class="form-input" rows="4"
+                    placeholder="Describe your situation in detail. Be specific about what the funds will be used for..."></textarea>
+                </div>
+
+                <!-- Location -->
+                <div class="form-group">
+                  <label class="form-label">Location</label>
+                  <input type="text" id="apply-location" class="form-input"
+                    placeholder="e.g. Dhaka, Bangladesh"/>
+                </div>
+
+                <!-- Submit -->
+                <button class="btn btn-primary btn-lg btn-block" id="apply-submit-btn"
+                  onclick="submitCase()">
+                  <span id="apply-submit-text">📤 Submit Case</span>
+                </button>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Right — Upload documents -->
+          <div style="display:flex;flex-direction:column;gap:20px">
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">📁 Upload Documents (IPFS)</div>
+              </div>
+              <div class="card-body">
+                <p style="font-size:13px;color:var(--sub);margin-bottom:14px">
+                  Upload supporting documents — medical reports, identity proof, or any relevant files.
+                  Files will be stored on IPFS.
+                </p>
+
+                <!-- Drop zone -->
+                <div class="upload-zone" id="upload-zone"
+                  onclick="document.getElementById('file-input').click()"
+                  ondragover="handleDragOver(event)"
+                  ondragleave="handleDragLeave(event)"
+                  ondrop="handleDrop(event)">
+                  <input type="file" id="file-input" multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onchange="handleFileSelect(event)"/>
+                  <div class="upload-icon">📂</div>
+                  <div class="upload-title">Drag & drop your files here</div>
+                  <div class="upload-desc">or click to browse<br/>PDF, JPG, PNG, DOC — max 10MB each</div>
+                </div>
+
+                <!-- Uploaded files -->
+                <div class="uploaded-files" id="uploaded-files"></div>
+
+                <div style="margin-top:14px;font-size:12px;color:var(--muted);text-align:center">
+                  Files will be uploaded to IPFS when case is submitted
+                </div>
+              </div>
+            </div>
+
+            <!-- Tips card -->
+            <div class="card" style="background:var(--success-subtle);border-color:rgba(34,197,94,0.2)">
+              <div class="card-body">
+                <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px">
+                  💡 Tips for faster approval
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--sub)">
+                  <div>✅ Attach medical or official documents</div>
+                  <div>✅ Be specific about fund usage</div>
+                  <div>✅ Provide accurate amount needed</div>
+                  <div>✅ Add your location for verification</div>
+                  <div>✅ Use a clear, descriptive title</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 4 — MY DOCUMENTS
+      ══════════════════════════════ -->
+      <div id="tab-documents" class="tab-panel">
+        <div class="dashboard-grid">
+
+          <!-- Upload section -->
+          <div class="card col-span-2">
+            <div class="card-header">
+              <div class="card-title">📁 My Documents on IPFS</div>
+              <span class="badge badge-primary">Stored on IPFS</span>
+            </div>
+            <div class="card-body">
+
+              <!-- Drop zone -->
+              <div class="upload-zone" id="doc-upload-zone"
+                onclick="document.getElementById('doc-file-input').click()"
+                ondragover="handleDragOver(event)"
+                ondragleave="handleDragLeave(event)"
+                ondrop="handleDocDrop(event)">
+                <input type="file" id="doc-file-input" multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onchange="handleDocFileSelect(event)"/>
+                <div class="upload-icon">☁️</div>
+                <div class="upload-title">Upload to IPFS</div>
+                <div class="upload-desc">Drag & drop your files here or click to browse</div>
+              </div>
+
+              <div class="uploaded-files" id="doc-uploaded-files" style="margin-top:16px"></div>
+
+            </div>
+          </div>
+
+          <!-- Documents already stored -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🗂️ Stored Documents</div>
+            </div>
+            <div class="card-body">
+              <div id="stored-docs-list">
+                <div class="empty-state">
+                  <div class="empty-icon">📁</div>
+                  <div class="empty-title">No documents yet</div>
+                  <div class="empty-desc">Upload documents for your cases</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 5 — FUNDS RECEIVED
+      ══════════════════════════════ -->
+      <div id="tab-funds" class="tab-panel">
+        <div class="stats-grid" style="margin-bottom:24px">
+          <div class="stat-card">
+            <div class="stat-icon green">💵</div>
+            <div class="stat-body">
+              <div class="stat-label">Total Received</div>
+              <div class="stat-value" id="funds-total">$0</div>
+              <div class="stat-sub">All time</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">📋</div>
+            <div class="stat-body">
+              <div class="stat-label">Cases Funded</div>
+              <div class="stat-value" id="funds-cases">0</div>
+              <div class="stat-sub">Fully or partially</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber">⏳</div>
+            <div class="stat-body">
+              <div class="stat-label">Pending Release</div>
+              <div class="stat-value" id="funds-pending">$0</div>
+              <div class="stat-sub">Awaiting confirmation</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fund milestones per case -->
+        <div id="funds-cases-list">
+          <div class="empty-state" style="padding:48px">
+            <div class="empty-icon">💵</div>
+            <div class="empty-title">No funds received yet</div>
+            <div class="empty-desc">Submit a case to start receiving donations</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 6 — NOTIFICATIONS
+      ══════════════════════════════ -->
+      <div id="tab-notifications" class="tab-panel">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔔 Notifications & Messages</div>
+            <button class="btn btn-ghost btn-sm" onclick="markAllRead()">
+              Mark all read
+            </button>
+          </div>
+          <div class="card-body" id="all-notifs-list">
+            <div class="empty-state">
+              <div class="empty-icon">🔔</div>
+              <div class="empty-title">No notifications</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════
+           TAB 7 — PROFILE
+      ══════════════════════════════ -->
+      <div id="tab-profile" class="tab-panel">
+        <div class="dashboard-grid">
+          <div class="card col-span-2">
+            <div class="card-header">
+              <div class="card-title">👤 My Profile</div>
+              <button class="btn btn-outline btn-sm" onclick="saveProfile()">Save Changes</button>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+                <div class="user-avatar" id="profile-avatar"
+                  style="width:72px;height:72px;font-size:28px;border-radius:var(--radius-md)">N</div>
+                <div>
+                  <div style="font-size:18px;font-weight:700" id="profile-name">User</div>
+                  <div style="font-size:13px;color:var(--muted)">Needy · CharityChain Member</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" id="profile-fullname" class="form-input" placeholder="Full name"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input type="email" id="profile-email" class="form-input" placeholder="Email" readonly/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Location</label>
+                <input type="text" id="profile-location" class="form-input" placeholder="City, Country"/>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🔒 KYC Status</div>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-warning">
+                <span class="alert-icon">⚠️</span>
+                <div class="alert-body">
+                  <div class="alert-title">Verification Pending</div>
+                  <div class="alert-desc">Upload your identity documents to complete KYC verification.</div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-block mt-12" onclick="switchTab('documents', null)">
+                📁 Upload Documents
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/socket.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   Needy Dashboard Logic
+══════════════════════════════════════════════ */
+
+let myCases      = [];
+let uploadedFiles = [];
+let selectedCat  = 'Medical';
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireRole('needy')) return;
+
+  Auth.fillUserInfo();
+  fillTopbarAvatar();
+
+  await Promise.all([
+    loadMyCases(),
+    loadNotifications()
+  ]);
+
+  loadProfile();
+  Socket.connect();
+  setupSocketListeners();
+});
+
+function fillTopbarAvatar() {
+  const user = Auth.getUser();
+  if (!user) return;
+  const el = document.getElementById('topbar-avatar');
+  if (el) el.textContent = (user.full_name || 'N').charAt(0).toUpperCase();
+  const pa = document.getElementById('profile-avatar');
+  if (pa) pa.textContent = (user.full_name || 'N').charAt(0).toUpperCase();
+}
+
+/* ── TAB SWITCHING ── */
+function switchTab(name, btnEl) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (btnEl) btnEl.classList.add('active');
+}
+
+/* ── LOAD MY CASES ── */
+async function loadMyCases() {
+  try {
+    myCases = await CasesAPI.getMyCases() || [];
+    renderStats();
+    renderOverviewTable();
+    renderAllCasesTable();
+    renderFundsCases();
+  } catch (err) {
+    console.error('loadMyCases:', err);
+  }
+}
+
+/* ── STATS ── */
+function renderStats() {
+  const total    = myCases.length;
+  const approved = myCases.filter(c => c.status === 'approved').length;
+  const pending  = myCases.filter(c => c.status === 'pending').length;
+  const funds    = myCases.reduce((s, c) => s + (c.amount_funded || 0), 0);
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-pending').textContent  = pending;
+  document.getElementById('stat-funds').textContent    = '$' + funds.toLocaleString();
+  document.getElementById('funds-total').textContent   = '$' + funds.toLocaleString();
+  document.getElementById('funds-cases').textContent   = approved;
+}
+
+/* ── OVERVIEW TABLE ── */
+function renderOverviewTable() {
+  const tbody = document.getElementById('overview-cases-tbody');
+  if (!myCases.length) return;
+
+  tbody.innerHTML = myCases.slice(0, 5).map(c => `
+    <tr>
+      <td class="font-mono" style="font-size:11px">${c.id}</td>
+      <td style="font-weight:600">${c.title}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td>$${(c.amount_needed||0).toLocaleString()}</td>
+      <td style="color:var(--success);font-weight:600">$${(c.amount_funded||0).toLocaleString()}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm"
+          onclick="viewCaseDetail('${c.id}')">View</button>
+      </td>
+    </tr>`
+  ).join('');
+}
+
+/* ── ALL CASES TABLE ── */
+function renderAllCasesTable() {
+  const tbody = document.getElementById('all-cases-tbody');
+  if (!myCases.length) return;
+
+  tbody.innerHTML = myCases.map(c => {
+    const pct = Math.round(((c.amount_funded||0)/(c.amount_needed||1))*100);
+    return `
+      <tr>
+        <td class="font-mono" style="font-size:11px">${c.id}</td>
+        <td style="font-weight:600">${c.title}</td>
+        <td>${c.category || '—'}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td>$${(c.amount_needed||0).toLocaleString()}</td>
+        <td style="color:var(--success);font-weight:600">
+          $${(c.amount_funded||0).toLocaleString()}
+        </td>
+        <td>
+          <div class="attr-bar-wrap" style="min-width:100px">
+            <div class="attr-bar-track">
+              <div class="attr-bar-fill high" style="width:${Math.min(pct,100)}%"></div>
+            </div>
+            <div class="attr-bar-val">${pct}%</div>
+          </div>
+        </td>
+        <td>
+          <button class="btn btn-ghost btn-sm"
+            onclick="viewCaseDetail('${c.id}')">View</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+/* ── FUNDS CASES ── */
+function renderFundsCases() {
+  const el = document.getElementById('funds-cases-list');
+  const funded = myCases.filter(c => (c.amount_funded || 0) > 0);
+  if (!funded.length) return;
+
+  el.innerHTML = funded.map(c => {
+    const pct = Math.min(
+      Math.round(((c.amount_funded||0)/(c.amount_needed||1))*100), 100
+    );
+    return `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-title">${c.title}</div>
+          <span class="badge badge-success">$${(c.amount_funded||0).toLocaleString()} received</span>
+        </div>
+        <div class="card-body">
+          <!-- Progress -->
+          <div class="flex-between" style="font-size:12px;color:var(--muted);margin-bottom:6px">
+            <span>Funded: $${(c.amount_funded||0).toLocaleString()}</span>
+            <span>Goal: $${(c.amount_needed||0).toLocaleString()}</span>
+          </div>
+          <div class="progress-wrap" style="margin-bottom:16px">
+            <div class="progress-bar" style="width:${pct}%"></div>
+          </div>
+
+          <!-- Milestones -->
+          <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">
+            Fund Release Milestones
+          </div>
+          <div class="milestone-track">
+            <div class="milestone-step done">
+              <div class="ms-dot">✓</div>
+              <div class="ms-label">Case Approved</div>
+            </div>
+            <div class="milestone-step ${pct >= 25 ? 'done' : 'active'}">
+              <div class="ms-dot">${pct >= 25 ? '✓' : '●'}</div>
+              <div class="ms-label">25% Funded</div>
+            </div>
+            <div class="milestone-step ${pct >= 50 ? 'done' : ''}">
+              <div class="ms-dot">${pct >= 50 ? '✓' : '○'}</div>
+              <div class="ms-label">50% Funded</div>
+            </div>
+            <div class="milestone-step ${pct >= 100 ? 'done' : ''}">
+              <div class="ms-dot">${pct >= 100 ? '✓' : '○'}</div>
+              <div class="ms-label">Fully Funded</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── STATUS BADGE HELPER ── */
+function statusBadge(status) {
+  const map = {
+    approved: 'badge-success',
+    pending:  'badge-warning',
+    rejected: 'badge-danger'
+  };
+  return `<span class="badge ${map[status]||'badge-muted'}">${status||'—'}</span>`;
+}
+
+/* ── VIEW CASE DETAIL ── */
+function viewCaseDetail(id) {
+  Toast.show(`Opening case ${id}`, 'info');
+}
+
+/* ── CATEGORY SELECT ── */
+function selectCategory(cat, el) {
+  selectedCat = cat;
+  document.getElementById('apply-category').value = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* ── SUBMIT CASE ── */
+async function submitCase() {
+  const title    = document.getElementById('apply-title').value.trim();
+  const amount   = parseFloat(document.getElementById('apply-amount').value);
+  const desc     = document.getElementById('apply-desc').value.trim();
+  const category = document.getElementById('apply-category').value;
+  const location = document.getElementById('apply-location').value.trim();
+
+  document.getElementById('apply-error').style.display   = 'none';
+  document.getElementById('apply-success').style.display = 'none';
+
+  if (!title || !amount || !desc) {
+    document.getElementById('apply-error-msg').textContent = 'Please fill in all required fields';
+    document.getElementById('apply-error').style.display   = 'flex';
+    return;
+  }
+
+  if (amount < 1) {
+    document.getElementById('apply-error-msg').textContent = 'Amount must be at least $1';
+    document.getElementById('apply-error').style.display   = 'flex';
+    return;
+  }
+
+  const btn  = document.getElementById('apply-submit-btn');
+  const text = document.getElementById('apply-submit-text');
+  btn.disabled    = true;
+  text.innerHTML  = '<span class="spinner sm"></span> Submitting...';
+
+  try {
+    // Build FormData — supports file uploads for IPFS
+    const formData = new FormData();
+    formData.append('title',         title);
+    formData.append('category',      category);
+    formData.append('amount_needed', amount);
+    formData.append('description',   desc);
+    formData.append('location',      location);
+
+    uploadedFiles.forEach(f => formData.append('documents', f));
+
+    await CasesAPI.submit(formData);
+
+    document.getElementById('apply-success').style.display = 'flex';
+    Toast.show('Case submitted successfully!', 'success');
+
+    // Reset form
+    document.getElementById('apply-title').value    = '';
+    document.getElementById('apply-amount').value   = '';
+    document.getElementById('apply-desc').value     = '';
+    document.getElementById('apply-location').value = '';
+    uploadedFiles = [];
+    document.getElementById('uploaded-files').innerHTML = '';
+
+    // Reload cases
+    await loadMyCases();
+
+  } catch (err) {
+    document.getElementById('apply-error-msg').textContent = err.message || 'Submission failed';
+    document.getElementById('apply-error').style.display   = 'flex';
+  } finally {
+    btn.disabled   = false;
+    text.textContent = '📤 Submit Case';
+  }
+}
+
+/* ── FILE UPLOAD HANDLERS ── */
+function handleDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files);
+  addFiles(files, 'uploaded-files', uploadedFiles);
+}
+
+function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  addFiles(files, 'uploaded-files', uploadedFiles);
+}
+
+function handleDocDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files);
+  addFiles(files, 'doc-uploaded-files', []);
+}
+
+function handleDocFileSelect(e) {
+  const files = Array.from(e.target.files);
+  addFiles(files, 'doc-uploaded-files', []);
+}
+
+function addFiles(files, containerId, store) {
+  const container = document.getElementById(containerId);
+  files.forEach(f => {
+    store.push(f);
+    const size = f.size > 1024*1024
+      ? (f.size/1024/1024).toFixed(1) + ' MB'
+      : (f.size/1024).toFixed(0) + ' KB';
+
+    const el = document.createElement('div');
+    el.className = 'uploaded-file';
+    el.innerHTML = `
+      <span class="file-icon">📄</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-size">${size}</span>
+      <span class="file-remove" onclick="removeFile(this, '${f.name}')">✕</span>`;
+    container.appendChild(el);
+  });
+  Toast.show(`${files.length} file(s) added`, 'success', 2000);
+}
+
+function removeFile(el, name) {
+  uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+  el.closest('.uploaded-file').remove();
+}
+
+/* ── NOTIFICATIONS ── */
+async function loadNotifications() {
+  // Mock notifications — replace with real API call
+  const notifs = [
+    {
+      icon: '✅',
+      bg: 'var(--success-subtle)',
+      title: 'Your case #C12 has been approved by trustee',
+      time: '10 May 2025, 10:32 AM'
+    },
+    {
+      icon: '💵',
+      bg: 'var(--info-subtle)',
+      title: 'Funds of $100 released for case #C12',
+      time: '11 May 2025, 09:15 AM'
+    },
+    {
+      icon: '📋',
+      bg: 'var(--warning-subtle)',
+      title: 'Your case #C10 has been approved',
+      time: '12 May 2025, 03:18 AM'
+    }
+  ];
+
+  renderNotifications(notifs);
+}
+
+function renderNotifications(notifs) {
+  const preview = document.getElementById('notif-preview');
+  const allList = document.getElementById('all-notifs-list');
+  const badge   = document.getElementById('notif-badge');
+
+  badge.textContent = notifs.length;
+
+  const html = notifs.map(n => `
+    <div class="notif-item">
+      <div class="notif-dot-wrap" style="background:${n.bg}">${n.icon}</div>
+      <div class="notif-body">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-time">${n.time}</div>
+      </div>
+    </div>`
+  ).join('');
+
+  preview.innerHTML = html;
+  allList.innerHTML = html;
+}
+
+function markAllRead() {
+  document.getElementById('notif-badge').textContent = '0';
+  Toast.show('All notifications marked as read', 'success', 2000);
+}
+
+/* ── PROFILE ── */
+function loadProfile() {
+  const user = Auth.getUser();
+  if (!user) return;
+  const fn = document.getElementById('profile-fullname');
+  const em = document.getElementById('profile-email');
+  const pn = document.getElementById('profile-name');
+  if (fn) fn.value       = user.full_name || '';
+  if (em) em.value       = user.email || '';
+  if (pn) pn.textContent = user.full_name || 'User';
+}
+
+async function saveProfile() {
+  Toast.show('Profile saved', 'success');
+}
+
+/* ── WEBSOCKET ── */
+function setupSocketListeners() {
+  Socket.on('case_approved', (data) => {
+    Toast.show(`Your case has been approved!`, 'success', 5000);
+    loadMyCases();
+  });
+  Socket.on('funds_released', (data) => {
+    Toast.show(`Funds released for your case!`, 'success', 5000);
+    loadMyCases();
+  });
+}
+</script>
+
+</body>
+</html>

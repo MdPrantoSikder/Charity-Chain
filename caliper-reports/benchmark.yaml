@@ -1,0 +1,22 @@
+simpleArgs: &simple-args
+  initialMoney: 10000
+  moneyToTransfer: 1
+
+test:
+  name: consensus-comparison-erc20
+  description: ERC-20 transfer benchmark, 5 tx/s for 150 s
+  workers:
+    number: 1
+  rounds:
+    - label: fixed-load-5tps
+      description: 5 tx/s sustained for 150 seconds
+      txDuration: 150
+      rateControl:
+        type: fixed-rate
+        opts:
+          tps: 5
+      workload:
+        module: workload-erc20/transfer.js
+        arguments:
+          <<: *simple-args
+          money: 1

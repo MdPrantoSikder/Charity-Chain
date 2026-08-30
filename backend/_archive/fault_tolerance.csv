@@ -1,0 +1,19 @@
+protocol,degraded,degraded_pct,demoted,voters,approvals,clusters,committed,reason
+CB-BFT,0,0.0,0,7,7,4,True,
+CB-BFT,3,10.0,3,3,3,4,True,
+CB-BFT,6,20.0,6,3,3,4,True,
+CB-BFT,9,30.0,9,7,7,4,True,
+CB-BFT,12,40.0,12,7,7,4,False,Inter-cluster confirmation failed (2/3)
+CB-BFT,15,50.0,15,7,7,4,False,Inter-cluster confirmation failed (2/3)
+Raft,0,0.0,0,30,30,1,True,
+Raft,3,10.0,0,30,30,1,True,
+Raft,6,20.0,0,30,30,1,True,
+Raft,9,30.0,0,30,30,1,True,
+Raft,12,40.0,0,30,30,1,True,
+Raft,15,50.0,0,30,30,1,True,
+PBFT,0,0.0,0,30,30,1,True,
+PBFT,3,10.0,0,30,27,1,True,
+PBFT,6,20.0,0,30,24,1,True,
+PBFT,9,30.0,0,30,21,1,True,
+PBFT,12,40.0,0,30,18,1,False,Quorum not reached (18/21)
+PBFT,15,50.0,0,30,15,1,False,Quorum not reached (15/21)

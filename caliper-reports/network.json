@@ -1,0 +1,25 @@
+{
+  "caliper": {
+    "blockchain": "ethereum"
+  },
+  "ethereum": {
+    "url": "ws://localhost:8600",
+    "contractDeployerAddress": "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
+    "contractDeployerAddressPrivateKey": "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+    "fromAddress": "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
+    "fromAddressPrivateKey": "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+    "transactionConfirmationBlocks": 2,
+    "contracts": {
+      "ERC20": {
+        "path": "./contracts/ERC-20.json",
+        "estimateGas": true,
+        "gas": {
+          "transfer": 70000,
+          "balanceOf": 100000,
+          "approve": 70000,
+          "transferFrom": 90000
+        }
+      }
+    }
+  }
+}

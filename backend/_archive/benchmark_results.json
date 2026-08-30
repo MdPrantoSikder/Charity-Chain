@@ -1,0 +1,32 @@
+[
+  {
+    "protocol": "CB-BFT",
+    "committed": 30,
+    "failed": 0,
+    "msgs_per_round": 59.9,
+    "latency_ms": 1.884,
+    "f_byzantine": 1,
+    "distinct_leaders": 20,
+    "leader_gini": 0.4911
+  },
+  {
+    "protocol": "Raft",
+    "committed": 30,
+    "failed": 0,
+    "msgs_per_round": 58,
+    "latency_ms": 0.027,
+    "f_byzantine": 0,
+    "distinct_leaders": 1,
+    "leader_gini": 0.9667
+  },
+  {
+    "protocol": "PBFT",
+    "committed": 30,
+    "failed": 0,
+    "msgs_per_round": 1769,
+    "latency_ms": 0.019,
+    "f_byzantine": 9,
+    "distinct_leaders": 30,
+    "leader_gini": 0.0
+  }
+]

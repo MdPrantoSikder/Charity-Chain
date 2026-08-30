@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Consensus Logs</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+
+    /* ── Consensus page layout ── */
+    body {
+      background: var(--bg);
+    }
+
+    .consensus-layout {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-brand .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+    }
+
+    .nav-brand .brand-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--sub);
+      text-decoration: none;
+      transition: color 0.18s;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--primary);
+    }
+
+    /* ── Consensus container ── */
+    .consensus-container {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 48px 80px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 15px;
+      color: var(--sub);
+    }
+
+    /* ── Live indicator ── */
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--success);
+      margin-bottom: 24px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes live-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+      50%      { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+
+    /* ── CB-BFT Pipeline visualization ── */
+    .CB-BFT-pipeline {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pipeline-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pipeline-stages {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+
+    .pipeline-stage {
+      flex: 1;
+      min-width: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .ps-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+      transition: all 0.3s;
+    }
+
+    .pipeline-stage.active .ps-icon {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 0 0 4px var(--primary-glow);
+      animation: stage-pulse 2s ease-in-out infinite;
+    }
+
+    .pipeline-stage.complete .ps-icon {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    @keyframes stage-pulse {
+      0%, 100% { box-shadow: 0 0 0 4px var(--primary-glow); }
+      50%      { box-shadow: 0 0 0 8px rgba(108,99,255,0.1); }
+    }
+
+    .ps-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--sub);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .pipeline-stage.active .ps-label {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .ps-arrow {
+      position: absolute;
+      top: 24px;
+      left: calc(50% + 24px);
+      right: calc(-50% + 24px);
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+    }
+
+    .pipeline-stage.complete .ps-arrow {
+      background: var(--success);
+    }
+
+    .pipeline-stage:last-child .ps-arrow {
+      display: none;
+    }
+
+    /* ── Log entry ── */
+    .log-section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .log-section-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }
+
+    .lsh-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .log-section-body {
+      padding: 0;
+    }
+
+    .log-entry {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.18s;
+    }
+
+    .log-entry:hover {
+      background: var(--bg);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .leh-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .log-stage-badge {
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .log-stage-badge.l1 { background: rgba(239,68,68,0.1);  color: #EF4444; }
+    .log-stage-badge.l2 { background: rgba(249,115,22,0.1); color: #F97316; }
+    .log-stage-badge.l3 { background: rgba(245,158,11,0.1); color: #F59E0B; }
+    .log-stage-badge.l4 { background: rgba(234,179,8,0.1);  color: #EAB308; }
+    .log-stage-badge.l5 { background: rgba(132,204,22,0.1); color: #84CC16; }
+    .log-stage-badge.l6 { background: rgba(34,197,94,0.1);  color: #22C55E; }
+    .log-stage-badge.l7 { background: rgba(16,185,129,0.1); color: #10B981; }
+    .log-stage-badge.l8 { background: rgba(59,130,246,0.1); color: #3B82F6; }
+    .log-stage-badge.l9 { background: rgba(99,102,241,0.1); color: #6366F1; }
+
+    .log-desc {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .log-time {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+    }
+
+    .log-entry-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--sub);
+    }
+
+    .log-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .log-meta-label {
+      color: var(--muted);
+    }
+
+    .log-meta-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Round info card ── */
+    .round-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .round-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rch-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .round-card-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .rcb-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .rcb-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .rcb-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Empty state ── */
+    .consensus-empty {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 60px 40px;
+      text-align: center;
+    }
+
+    .consensus-empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .consensus-empty-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .consensus-empty-desc {
+      font-size: 14px;
+      color: var(--sub);
+    }
+
+    /* ── Footer ── */
+    .consensus-footer {
+      background: var(--text);
+      color: rgba(255,255,255,0.5);
+      padding: 24px 48px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .consensus-container { padding: 32px 24px 60px; }
+      .navbar { padding: 0 24px; }
+      .pipeline-stages { overflow-x: auto; }
+      .round-card-body { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="consensus-layout">
+
+  <!-- ══════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════ -->
+  <nav class="navbar">
+    <a class="nav-brand" href="landing.html">
+      <div class="brand-icon">⛓</div>
+      <div class="brand-name">CharityChain</div>
+    </a>
+
+    <div class="nav-links">
+      <a class="nav-link" href="explorer.html">Block Explorer</a>
+      <a class="nav-link" href="pools.html">Validator Pools</a>
+      <a class="nav-link active" href="consensus.html">Consensus Logs</a>
+      <a class="nav-link" href="landing.html">Home</a>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <a href="index.html" class="btn btn-ghost btn-sm">Login</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════ -->
+  <div class="consensus-container">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1 class="page-title">📝 CB-BFT Consensus Logs</h1>
+      <p class="page-subtitle">
+        Real-time consensus rounds — L1 through L9 stage monitoring
+      </p>
+    </div>
+
+    <!-- Live indicator -->
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      Live Consensus Monitoring
+    </div>
+
+    <!-- CB-BFT Pipeline visualization -->
+    <div class="CB-BFT-pipeline">
+      <div class="pipeline-title">
+        🧠 CB-BFT Consensus Pipeline (9 Layers)
+      </div>
+      <div class="pipeline-stages" id="pipeline-stages">
+        
+        <div class="pipeline-stage" data-layer="L1">
+          <div class="ps-icon">🚪</div>
+          <div class="ps-label">L1<br/>Entry Gate</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L2">
+          <div class="ps-icon">📊</div>
+          <div class="ps-label">L2<br/>F-Score</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L3">
+          <div class="ps-icon">⏱️</div>
+          <div class="ps-label">L3<br/>Decay</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L4">
+          <div class="ps-icon">🎯</div>
+          <div class="ps-label">L4<br/>Normalization</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L5">
+          <div class="ps-icon">🏊</div>
+          <div class="ps-label">L5<br/>SGDC Pools</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L6">
+          <div class="ps-icon">👑</div>
+          <div class="ps-label">L6<br/>VRF-WRLE</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L7">
+          <div class="ps-icon">🔐</div>
+          <div class="ps-label">L7<br/>BFT</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L8">
+          <div class="ps-icon">🌐</div>
+          <div class="ps-label">L8<br/>HotStuff</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+        <div class="pipeline-stage" data-layer="L9">
+          <div class="ps-icon">📡</div>
+          <div class="ps-label">L9<br/>JSD Monitor</div>
+          <div class="ps-arrow"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Current round info -->
+    <div class="round-card" id="current-round-card" style="display:none">
+      <div class="round-card-header">
+        <div class="rch-title">🔄 Current Consensus Round</div>
+        <span class="badge badge-primary" id="current-round-badge">Round #—</span>
+      </div>
+      <div class="round-card-body">
+        <div class="rcb-item">
+          <div class="rcb-label">Transaction ID</div>
+          <div class="rcb-value font-mono" id="current-tx-id">—</div>
+        </div>
+        <div class="rcb-item">
+          <div class="rcb-label">Leader Node</div>
+          <div class="rcb-value" id="current-leader">—</div>
+        </div>
+        <div class="rcb-item">
+          <div class="rcb-label">Current Stage</div>
+          <div class="rcb-value" id="current-stage">—</div>
+        </div>
+        <div class="rcb-item">
+          <div class="rcb-label">Pool</div>
+          <div class="rcb-value" id="current-pool">—</div>
+        </div>
+        <div class="rcb-item">
+          <div class="rcb-label">Started At</div>
+          <div class="rcb-value font-mono" id="current-start">—</div>
+        </div>
+        <div class="rcb-item">
+          <div class="rcb-label">Status</div>
+          <div class="rcb-value" id="current-status">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent consensus rounds -->
+    <div class="log-section">
+      <div class="log-section-header">
+        <div class="lsh-title">📋 Recent Consensus Rounds</div>
+        <span class="badge badge-primary" id="rounds-count">0 rounds</span>
+      </div>
+      <div class="log-section-body" id="logs-container">
+        <div class="consensus-empty">
+          <div class="consensus-empty-icon">📝</div>
+          <div class="consensus-empty-title">No consensus logs yet</div>
+          <div class="consensus-empty-desc">
+            Logs will appear here when transactions go through CB-BFT consensus
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer descriptions -->
+    <div class="CB-BFT-pipeline">
+      <div class="pipeline-title">ℹ️ CB-BFT Layer Descriptions</div>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--sub)">
+        
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L1 — Entry Gate:</strong>
+          Validates stake ≥ 0.5 and reputation ≥ 0.35. Rejects nodes below threshold.
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L2 — F-Score Calculation:</strong>
+          Combines reputation, uptime, latency, bandwidth, and stake with weighted entropy and variance (α=0.6, β=0.4).
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L3 — Temporal Decay:</strong>
+          Applies exponential decay to reputation and uptime scores based on time since last activity.
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L4 — Normalization:</strong>
+          Min-max normalization across all nodes to ensure fair comparison.
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L5 — SGDC Pool Formation:</strong>
+          Score-Guided Density Clustering assigns nodes to Elite / Standard / Observer / Probation pools with Gini diversity check.
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L6 — VRF-WRLE Leader Election:</strong>
+          Verifiable Random Function with Weighted Random Leader Election picks leader from Elite pool.
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L7 — Intra-Pool BFT:</strong>
+          Byzantine Fault Tolerant consensus within each pool (2f+1 votes required).
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L8 — Inter-Pool HotStuff:</strong>
+          HotStuff protocol synchronizes decisions across Elite and Standard pools.
+        </div>
+
+        <div style="padding:10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border)">
+          <strong style="color:var(--text)">L9 — JSD Drift Monitor:</strong>
+          Jensen-Shannon Divergence monitoring — triggers recluster if JSD > 0.15.
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════ -->
+  <footer class="consensus-footer">
+    <div>📝 CharityChain Consensus Logs · CB-BFT L1→L9 Real-time Monitoring</div>
+    <div style="margin-top:4px;font-size:12px">
+      © 2025 CharityChain. All rights reserved.
+    </div>
+  </footer>
+
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/socket.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   Consensus Logs Logic
+══════════════════════════════════════════════ */
+
+let consensusLogs = [];
+let currentRound  = null;
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadConsensusLogs();
+  Socket.connect();
+  setupSocketListeners();
+});
+
+/* ── LOAD CONSENSUS LOGS ── */
+async function loadConsensusLogs() {
+  try {
+    consensusLogs = await BlockchainAPI.getConsensusLogs() || [];
+    renderLogs();
+  } catch (err) {
+    console.error('loadConsensusLogs:', err);
+  }
+}
+
+/* ── RENDER LOGS ── */
+function renderLogs() {
+  const container = document.getElementById('logs-container');
+  const badge     = document.getElementById('rounds-count');
+
+  if (badge) {
+    badge.textContent = consensusLogs.length + ' rounds';
+  }
+
+  if (!consensusLogs.length) {
+    container.innerHTML = `
+      <div class="consensus-empty">
+        <div class="consensus-empty-icon">📝</div>
+        <div class="consensus-empty-title">No consensus logs yet</div>
+        <div class="consensus-empty-desc">
+          Logs will appear here when transactions go through CB-BFT consensus
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Sort by timestamp descending
+  const sorted = [...consensusLogs].sort((a, b) => 
+    new Date(b.timestamp || 0) - new Date(a.timestamp || 0)
+  );
+
+  container.innerHTML = sorted.map(renderLogEntry).join('');
+}
+
+/* ── RENDER LOG ENTRY ── */
+function renderLogEntry(log) {
+  const stage  = log.layer || 'L1';
+  const desc   = log.description || 'Consensus stage completed';
+  const time   = log.timestamp 
+    ? new Date(log.timestamp).toLocaleString()
+    : '—';
+  
+  const txId   = log.tx_id || '—';
+  const round  = log.round_id || '—';
+  const leader = log.leader_node || '—';
+  const pool   = log.pool || 'Elite';
+  const status = log.status || 'success';
+
+  const stageClass = stage.toLowerCase().replace('l', 'l');
+
+  return `
+    <div class="log-entry">
+      <div class="log-entry-header">
+        <div class="leh-left">
+          <span class="log-stage-badge ${stageClass}">${stage}</span>
+          <span class="log-desc">${desc}</span>
+        </div>
+        <span class="log-time">${time}</span>
+      </div>
+      <div class="log-entry-meta">
+        <div class="log-meta-item">
+          <span class="log-meta-label">Round:</span>
+          <span class="log-meta-value font-mono">${round}</span>
+        </div>
+        <div class="log-meta-item">
+          <span class="log-meta-label">Tx:</span>
+          <span class="log-meta-value font-mono">${txId.substring(0,12)}...</span>
+        </div>
+        <div class="log-meta-item">
+          <span class="log-meta-label">Leader:</span>
+          <span class="log-meta-value">${leader}</span>
+        </div>
+        <div class="log-meta-item">
+          <span class="log-meta-label">Pool:</span>
+          <span class="badge badge-${pool.toLowerCase()}" style="font-size:10px">${pool}</span>
+        </div>
+        <div class="log-meta-item">
+          <span class="log-meta-label">Status:</span>
+          <span class="badge ${status === 'success' ? 'badge-success' : 'badge-danger'}"
+            style="font-size:10px">${status}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── UPDATE PIPELINE ── */
+function updatePipeline(stage) {
+  // Reset all stages
+  document.querySelectorAll('.pipeline-stage').forEach(s => {
+    s.classList.remove('active', 'complete');
+  });
+
+  // Mark stages up to current as complete
+  const stages = ['L1','L2','L3','L4','L5','L6','L7','L8','L9'];
+  const currentIdx = stages.indexOf(stage);
+
+  if (currentIdx >= 0) {
+    stages.forEach((s, idx) => {
+      const el = document.querySelector(`.pipeline-stage[data-layer="${s}"]`);
+      if (idx < currentIdx) {
+        el?.classList.add('complete');
+      } else if (idx === currentIdx) {
+        el?.classList.add('active');
+      }
+    });
+  }
+}
+
+/* ── UPDATE CURRENT ROUND ── */
+function updateCurrentRound(data) {
+  const card = document.getElementById('current-round-card');
+  if (!card) return;
+
+  card.style.display = 'block';
+
+  document.getElementById('current-round-badge').textContent = 
+    'Round #' + (data.round_id || '—');
+  document.getElementById('current-tx-id').textContent = 
+    (data.tx_id || '—').substring(0, 24) + '...';
+  document.getElementById('current-leader').textContent = 
+    data.leader_node || '—';
+  document.getElementById('current-stage').textContent = 
+    data.stage || '—';
+  document.getElementById('current-pool').textContent = 
+    data.pool || 'Elite';
+  document.getElementById('current-start').textContent = 
+    data.started_at 
+      ? new Date(data.started_at).toLocaleTimeString()
+      : '—';
+  document.getElementById('current-status').textContent = 
+    data.status || 'In Progress';
+
+  updatePipeline(data.stage);
+}
+
+/* ── WEBSOCKET ── */
+function setupSocketListeners() {
+  // Listen for all L1–L9 stages
+  const stages = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9'];
+
+  stages.forEach(stage => {
+    Socket.on(`consensus_stage_${stage}`, (data) => {
+      updateCurrentRound({ ...data, stage });
+      Toast.show(`${stage} — ${data.description || 'Stage completed'}`, 'info', 2000);
+    });
+  });
+
+  // Generic consensus_stage event
+  Socket.on('consensus_stage', (data) => {
+    if (data?.stage) {
+      updateCurrentRound(data);
+    }
+  });
+
+  // Consensus complete
+  Socket.on('consensus_complete', async (data) => {
+    Toast.show('Consensus complete — block confirmed!', 'success', 3000);
+    
+    // Reset pipeline
+    document.querySelectorAll('.pipeline-stage').forEach(s => {
+      s.classList.remove('active');
+      s.classList.add('complete');
+    });
+
+    // Hide current round after delay
+    setTimeout(() => {
+      const card = document.getElementById('current-round-card');
+      if (card) card.style.display = 'none';
+      
+      // Reset pipeline
+      document.querySelectorAll('.pipeline-stage').forEach(s => {
+        s.classList.remove('active', 'complete');
+      });
+    }, 3000);
+
+    // Reload logs
+    await loadConsensusLogs();
+  });
+
+  // JSD alert
+  Socket.on('jsd_alert', (data) => {
+    Toast.show(`L9 JSD Alert — Score: ${data?.jsd_score || 0}`, 'warning', 5000);
+  });
+
+  // Recluster events
+  Socket.on('recluster_started', () => {
+    Toast.show('Pool reclustering started...', 'info', 3000);
+  });
+
+  Socket.on('recluster_complete', () => {
+    Toast.show('Pool reclustering complete!', 'success', 3000);
+  });
+}
+</script>
+
+</body>
+</html>

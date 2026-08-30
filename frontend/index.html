@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Login</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+    /* ── Login page specific styles ── */
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      padding: 24px;
+    }
+
+    /* Split layout — left brand panel + right form */
+    .auth-wrap {
+      display: flex;
+      width: 100%;
+      max-width: 920px;
+      min-height: 560px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* ── Left Panel — Brand ── */
+    .auth-brand {
+      width: 380px;
+      flex-shrink: 0;
+      background: linear-gradient(145deg, var(--primary-dark), #4338CA);
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Background circle decorations */
+    .auth-brand::before {
+      content: '';
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      top: -80px;
+      right: -80px;
+    }
+
+    .auth-brand::after {
+      content: '';
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      bottom: -40px;
+      left: -40px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-logo .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .brand-logo .logo-text {
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-logo .logo-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .brand-middle {
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-middle h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    .brand-middle p {
+      font-size: 13.5px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.65;
+    }
+
+    .brand-bottom {
+      position: relative;
+      z-index: 1;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* ── Animated Illustration ── */
+    .brand-illustration {
+      position: relative;
+      z-index: 1;
+      margin-top: 28px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-illustration svg {
+      width: 100%;
+      max-width: 280px;
+      height: auto;
+    }
+
+    /* Floating animation */
+    @keyframes floatUp {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-5px); }
+    }
+
+    @keyframes pulse-ring {
+      0%   { r: 18; opacity: 0.25; }
+      50%  { r: 22; opacity: 0.08; }
+      100% { r: 18; opacity: 0.25; }
+    }
+
+    @keyframes dash-flow {
+      to { stroke-dashoffset: -20; }
+    }
+
+    @keyframes coin-drop {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+      30%      { transform: translateY(-12px) scale(1.1); opacity: 1; }
+      60%      { transform: translateY(4px) scale(0.95); opacity: 0.8; }
+    }
+
+    .float-main  { animation: floatUp 4s ease-in-out infinite; }
+    .float-slow  { animation: floatSlow 5s ease-in-out infinite 0.5s; }
+    .float-delay { animation: floatUp 4.5s ease-in-out infinite 1s; }
+
+    .pulse-r { animation: pulse-ring 3s ease-in-out infinite; }
+
+    .dash-line {
+      stroke-dasharray: 6 4;
+      animation: dash-flow 1.5s linear infinite;
+    }
+
+    .coin-anim { animation: coin-drop 3s ease-in-out infinite 0.3s; }
+
+    /* ── Right Panel — Form ── */
+    .auth-form-wrap {
+      flex: 1;
+      padding: 48px 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    /* Tab switcher — Login / Register */
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 9px;
+      text-align: center;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      background: transparent;
+    }
+
+    .auth-tab.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Form title */
+    .form-heading {
+      margin-bottom: 24px;
+    }
+
+    .form-heading h3 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .form-heading p {
+      font-size: 13px;
+      color: var(--sub);
+    }
+
+    /* Role selector cards */
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .role-card {
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s;
+      background: var(--bg);
+    }
+
+    .role-card:hover {
+      border-color: var(--primary-light);
+      background: var(--primary-subtle);
+    }
+
+    .role-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-subtle);
+    }
+
+    .role-card .role-icon { font-size: 22px; margin-bottom: 4px; }
+
+    .role-card .role-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .role-card .role-desc {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Two column form row */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* Submit button */
+    .auth-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .auth-submit:hover {
+      background: var(--primary-dark);
+      box-shadow: 0 4px 14px var(--primary-glow);
+      transform: translateY(-1px);
+    }
+
+    .auth-switch {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--sub);
+    }
+
+    .auth-switch span {
+      color: var(--primary);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Hide/show panels */
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+
+    @media (max-width: 700px) {
+      .auth-brand  { display: none; }
+      .auth-wrap   { max-width: 440px; }
+      .form-row    { grid-template-columns: 1fr; }
+      .role-grid   { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-wrap">
+
+  <!-- ── Left Brand Panel ── -->
+  <div class="auth-brand">
+    <div class="brand-logo">
+      <div class="logo-icon">⛓</div>
+      <div>
+        <div class="logo-text">CharityChain</div>
+        <div class="logo-sub">Transparent Donations</div>
+      </div>
+    </div>
+
+    <div class="brand-middle">
+      <h2>Every donation<br/>on the blockchain</h2>
+      <p>
+        A private permissioned blockchain system
+        ensuring every charity donation is tracked,
+        verified, and transparent using CB-BFT consensus.
+      </p>
+
+      <!-- ── Animated illustration replaces 4 bullet lines ── -->
+      <div class="brand-illustration">
+        <svg viewBox="0 0 280 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- Dashed connection lines (animated flow) -->
+          <line x1="70" y1="75" x2="140" y2="55" class="dash-line" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <line x1="140" y1="55" x2="210" y2="75" class="dash-line" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          <line x1="70" y1="75" x2="140" y2="110" class="dash-line" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="210" y1="75" x2="140" y2="110" class="dash-line" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+
+          <!-- Left node — Donor (heart) -->
+          <g class="float-main">
+            <circle cx="70" cy="75" r="24" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+            <circle cx="70" cy="75" class="pulse-r" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+            <text x="70" y="80" text-anchor="middle" font-size="20">❤️</text>
+            <text x="70" y="108" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9" font-weight="600">Donor</text>
+          </g>
+
+          <!-- Center node — Block (chain link) -->
+          <g class="float-slow">
+            <rect x="118" y="33" width="44" height="44" rx="10" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+            <text x="140" y="61" text-anchor="middle" font-size="22">⛓</text>
+            <text x="140" y="95" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9" font-weight="600">Verified</text>
+          </g>
+
+          <!-- Right node — Recipient (hands) -->
+          <g class="float-delay">
+            <circle cx="210" cy="75" r="24" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+            <circle cx="210" cy="75" class="pulse-r" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+            <text x="210" y="80" text-anchor="middle" font-size="20">🙏</text>
+            <text x="210" y="108" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9" font-weight="600">Recipient</text>
+          </g>
+
+          <!-- Bottom center — Trustee (shield) -->
+          <g class="float-main" style="animation-delay: 0.7s">
+            <circle cx="140" cy="120" r="18" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <text x="140" y="125" text-anchor="middle" font-size="16">🛡️</text>
+            <text x="140" y="146" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8" font-weight="600">Trustee</text>
+          </g>
+
+          <!-- Animated coin flowing from Donor → Block -->
+          <g class="coin-anim">
+            <circle cx="105" cy="63" r="7" fill="rgba(250,204,21,0.8)"/>
+            <text x="105" y="66.5" text-anchor="middle" font-size="8" fill="#92400e" font-weight="700">$</text>
+          </g>
+
+          <!-- Small block hashes floating near center -->
+          <g class="float-slow" style="animation-delay: 1.5s">
+            <rect x="155" y="18" width="36" height="12" rx="3" fill="rgba(255,255,255,0.07)"/>
+            <text x="173" y="27" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="6" font-family="monospace">0xf7a2</text>
+          </g>
+
+          <g class="float-delay" style="animation-delay: 2s">
+            <rect x="85" y="42" width="28" height="10" rx="3" fill="rgba(255,255,255,0.05)"/>
+            <text x="99" y="50" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="5.5" font-family="monospace">0x3b</text>
+          </g>
+
+        </svg>
+      </div>
+    </div>
+
+    <div class="brand-bottom">
+      CharityChain © 2025 — Research Grade System
+    </div>
+  </div>
+
+  <!-- ── Right Form Panel ── -->
+  <div class="auth-form-wrap">
+
+    <!-- Tab switcher -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- Error alert -->
+    <div id="auth-error" class="alert alert-danger" style="display:none">
+      <span class="alert-icon">❌</span>
+      <div class="alert-body">
+        <div class="alert-title">Error</div>
+        <div class="alert-desc" id="auth-error-msg"></div>
+      </div>
+    </div>
+
+    <!-- ── LOGIN PANEL ── -->
+    <div id="panel-login" class="auth-panel active">
+      <div class="form-heading">
+        <h3>Welcome back 👋</h3>
+        <p>Sign in to your CharityChain account</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email Address <span>*</span></label>
+        <input
+          type="email"
+          id="login-email"
+          class="form-input"
+          placeholder="you@example.com"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password <span>*</span></label>
+        <input
+          type="password"
+          id="login-password"
+          class="form-input"
+          placeholder="Enter your password"
+        />
+      </div>
+
+      <button class="auth-submit" id="login-btn" onclick="handleLogin()">
+        <span id="login-btn-text">Sign In</span>
+      </button>
+
+      <div class="auth-switch">
+        Don't have an account?
+        <span onclick="switchTab('register')">Register here</span>
+      </div>
+    </div>
+
+    <!-- ── REGISTER PANEL ── -->
+    <div id="panel-register" class="auth-panel">
+      <div class="form-heading">
+        <h3>Create account ✨</h3>
+        <p>Join CharityChain — choose your role below</p>
+      </div>
+
+      <!-- Role selector -->
+      <div class="role-grid" id="role-grid">
+        <div class="role-card selected" onclick="selectRole('donor', this)">
+          <div class="role-icon">💰</div>
+          <div class="role-name">Donor</div>
+          <div class="role-desc">Donate & track</div>
+        </div>
+        <div class="role-card" onclick="selectRole('needy', this)">
+          <div class="role-icon">🙏</div>
+          <div class="role-name">Needy</div>
+          <div class="role-desc">Apply for help</div>
+        </div>
+        <div class="role-card" onclick="selectRole('trustee', this)">
+          <div class="role-icon">🏦</div>
+          <div class="role-name">Trustee</div>
+          <div class="role-desc">NGO / Bank</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name <span>*</span></label>
+          <input
+            type="text"
+            id="reg-firstname"
+            class="form-input"
+            placeholder="John"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name <span>*</span></label>
+          <input
+            type="text"
+            id="reg-lastname"
+            class="form-input"
+            placeholder="Doe"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email Address <span>*</span></label>
+        <input
+          type="email"
+          id="reg-email"
+          class="form-input"
+          placeholder="you@example.com"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password <span>*</span></label>
+        <input
+          type="password"
+          id="reg-password"
+          class="form-input"
+          placeholder="Minimum 8 characters"
+        />
+        <div class="form-hint">Must be at least 8 characters</div>
+      </div>
+
+      <input type="hidden" id="reg-role" value="donor"/>
+
+      <button class="auth-submit" id="register-btn" onclick="handleRegister()">
+        <span id="register-btn-text">Create Account</span>
+      </button>
+
+      <div class="auth-switch">
+        Already have an account?
+        <span onclick="switchTab('login')">Sign in</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Load shared JS -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+
+<script>
+  // ── On page load ──
+  window.addEventListener('DOMContentLoaded', () => {
+    if (Auth.isLoggedIn()) {
+      Auth.redirectToDashboard();
+    }
+  });
+
+  // ── Tab switcher ──
+  function switchTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+      t.classList.toggle('active', (tab === 'login' ? i === 0 : i === 1));
+    });
+    document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+    hideError();
+  }
+
+  // ── Role selector ──
+  let selectedRole = 'donor';
+
+  function selectRole(role, el) {
+    selectedRole = role;
+    document.getElementById('reg-role').value = role;
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ── Show / hide error ──
+  function showError(msg) {
+    const el = document.getElementById('auth-error');
+    document.getElementById('auth-error-msg').textContent = msg;
+    el.style.display = 'flex';
+  }
+
+  function hideError() {
+    document.getElementById('auth-error').style.display = 'none';
+  }
+
+  // ── Set button loading state ──
+  function setLoading(btnId, textId, loading, defaultText) {
+    const btn  = document.getElementById(btnId);
+    const text = document.getElementById(textId);
+    if (loading) {
+      btn.disabled = true;
+      text.innerHTML = '<span class="spinner sm"></span> Please wait...';
+    } else {
+      btn.disabled = false;
+      text.textContent = defaultText;
+    }
+  }
+
+  // ── Handle Login ──
+  async function handleLogin() {
+    hideError();
+
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+      showError('Please fill in all fields');
+      return;
+    }
+
+    setLoading('login-btn', 'login-btn-text', true);
+
+    try {
+      const res = await AuthAPI.login(email, password);
+      Auth.setToken(res.access_token);
+      Auth.setUser(res.user);
+      Auth.redirectToDashboard();
+
+    } catch (err) {
+      showError(err.message || 'Invalid email or password');
+      setLoading('login-btn', 'login-btn-text', false, 'Sign In');
+    }
+  }
+
+  // ── Handle Register ──
+  async function handleRegister() {
+    hideError();
+
+    const firstName = document.getElementById('reg-firstname').value.trim();
+    const lastName  = document.getElementById('reg-lastname').value.trim();
+    const email     = document.getElementById('reg-email').value.trim();
+    const password  = document.getElementById('reg-password').value;
+    const role      = document.getElementById('reg-role').value;
+
+    if (!firstName || !lastName || !email || !password) {
+      showError('Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 8) {
+      showError('Password must be at least 8 characters');
+      return;
+    }
+
+    setLoading('register-btn', 'register-btn-text', true);
+
+    try {
+      const res = await AuthAPI.register({
+        full_name: `${firstName} ${lastName}`,
+        email,
+        password,
+        role
+      });
+
+      Auth.setToken(res.access_token);
+      Auth.setUser(res.user);
+      Auth.redirectToDashboard();
+
+    } catch (err) {
+      showError(err.message || 'Registration failed. Try a different email.');
+      setLoading('register-btn', 'register-btn-text', false, 'Create Account');
+    }
+  }
+
+  // ── Allow Enter key to submit ──
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const loginActive = document.getElementById('panel-login').classList.contains('active');
+      if (loginActive) handleLogin();
+      else handleRegister();
+    }
+  });
+</script>
+
+</body>
+</html>

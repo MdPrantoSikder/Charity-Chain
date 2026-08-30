@@ -1,0 +1,490 @@
+From d290d841712591f240323a6b2ea5545e1cbdc625 Mon Sep 17 00:00:00 2001
+From: Pranto <your@email.com>
+Date: Fri, 14 Aug 2026 14:54:53 +0600
+Subject: [PATCH 5/6] Stage 5: integer fixed-point scoring, CRITIC weighting,
+ clustering, top-30% selection - deterministic across nodes
+
+---
+ .../cbbft/CbbftProposerSelector.java          | 398 ++++++++++++++++--
+ 1 file changed, 357 insertions(+), 41 deletions(-)
+
+diff --git a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+index 995ff47903..e247dcb6b2 100644
+--- a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
++++ b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+@@ -27,6 +27,8 @@ import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
+ import org.hyperledger.besu.ethereum.chain.Blockchain;
+ import org.hyperledger.besu.ethereum.core.BlockHeader;
+ 
++import java.util.ArrayList;
++import java.util.Collections;
+ import java.util.LinkedHashMap;
+ import java.util.List;
+ import java.util.Map;
+@@ -46,7 +48,12 @@ public class CbbftProposerSelector implements ProposerSelector {
+ 
+   private static final Logger LOG = LoggerFactory.getLogger(CbbftProposerSelector.class);
+ 
+-  private static final int WINDOW = 100;
++  /**
++   * Blocks of chain history each node walks. Thirty blocks is roughly three proposal opportunities
++   * per validator at n=10, which bounds adaptation latency to about one minute at a two second
++   * block period while leaving enough samples for CRITIC to discriminate.
++   */
++  private static final int WINDOW = 30;
+ 
+   private final ProposerSelector delegate;
+   private final Blockchain blockchain;
+@@ -54,7 +61,6 @@ public class CbbftProposerSelector implements ProposerSelector {
+   private final ValidatorProvider validatorProvider;
+   private final BftExtraDataCodec extraDataCodec;
+   private final BftBlockHashing blockHashing;
+-  private long lastLoggedSequence = -1;
+ 
+   /**
+    * Construct a CB-BFT proposer selector.
+@@ -82,9 +88,8 @@ public class CbbftProposerSelector implements ProposerSelector {
+   private static final class Attr {
+     long proposed;
+     long seals;
+-    double gasRatioSum;
+-    double gasUsedSum;
+-    double latencySum;
++    long gasWadSum;
++    long latencySecSum;
+     long latencySamples;
+   }
+ 
+@@ -97,15 +102,22 @@ public class CbbftProposerSelector implements ProposerSelector {
+    */
+   private Map<Address, Attr> collectAttributes(final long upToBlock) {
+     final Map<Address, Attr> out = new LinkedHashMap<>();
+-    for (final Address v : validatorProvider.getValidatorsAtHead()) {
++    final List<Address> validators = new ArrayList<>(validatorProvider.getValidatorsAtHead());
++    Collections.sort(validators);
++    for (final Address v : validators) {
+       out.put(v, new Attr());
+     }
+ 
+-    final long from = Math.max(1L, upToBlock - WINDOW);
+-    for (long n = from; n < upToBlock; n++) {
++    final long to = upToBlock - SCORING_LAG;
++    final long from = Math.max(1L, to - WINDOW);
++    if (to - from < 3) {
++      return null;
++    }
++    for (long n = from; n < to; n++) {
+       final Optional<BlockHeader> maybe = blockchain.getBlockHeader(n);
+       if (maybe.isEmpty()) {
+-        continue;
++        // Incomplete view of the window - refuse to score rather than score on partial data.
++        return null;
+       }
+       final BlockHeader h = maybe.get();
+ 
+@@ -122,15 +134,14 @@ public class CbbftProposerSelector implements ProposerSelector {
+       if (pa != null) {
+         pa.proposed++;
+         if (h.getGasLimit() > 0) {
+-          pa.gasRatioSum += (double) h.getGasUsed() / (double) h.getGasLimit();
+-          pa.gasUsedSum += (double) h.getGasUsed();
++          pa.gasWadSum += (h.getGasUsed() * WAD) / h.getGasLimit();
+         }
+         if (n > 1 && round0Only) {
+           blockchain
+               .getBlockHeader(h.getParentHash())
+               .ifPresent(
+                   parent -> {
+-                    pa.latencySum += (double) (h.getTimestamp() - parent.getTimestamp());
++                    pa.latencySecSum += h.getTimestamp() - parent.getTimestamp();
+                     pa.latencySamples++;
+                   });
+         }
+@@ -154,50 +165,355 @@ public class CbbftProposerSelector implements ProposerSelector {
+   }
+ 
+   /**
+-   * Log the derived matrix once per sequence.
+-   *
+-   * @param sequence the block sequence being decided
++   * A validator and its F-score. Ordering is F descending, then address ascending - the address
++   * tiebreak is what keeps every node in agreement when scores collide, which they do often at
++   * four decimal places.
+    */
+-  private void logAttributes(final long sequence) {
+-    if (sequence == lastLoggedSequence || sequence <= 1) {
+-      return;
++  private static final class Scored implements Comparable<Scored> {
++    final Address id;
++    final long f;
++
++    Scored(final Address id, final long f) {
++      this.id = id;
++      this.f = f;
++    }
++
++    @Override
++    public int compareTo(final Scored o) {
++      final int byScore = Long.compare(o.f, this.f);
++      return byScore != 0 ? byScore : this.id.compareTo(o.id);
+     }
+-    lastLoggedSequence = sequence;
++  }
++
++  /**
++   * Fixed-point scale. Every score is held as an integer multiple of 1e-18, so arithmetic is
++   * bit-identical on every node. Double arithmetic is not: accumulation order and JIT state change
++   * the last bits, which was enough to make validators disagree on the proposer.
++   */
++  private static final long WAD = 1_000_000_000_000_000_000L;
++
++  /** Multiply two WAD values, removing the extra scale factor. */
++  private static long wmul(final long a, final long b) {
++    return (a * b) / WAD;
++  }
++
++  /** Divide two WAD values, restoring the scale factor lost to division. */
++  private static long wdiv(final long a, final long b) {
++    return b == 0 ? 0 : (a * WAD) / b;
++  }
++
++  /** Integer square root of a WAD value, result WAD scaled. Babylonian iteration. */
++  private static long wsqrt(final long x) {
++    if (x <= 0) {
++      return 0;
++    }
++    // sqrt(x/WAD)*WAD == sqrt(x*WAD). Values here are at most WAD, so x*1e9*1e9 fits in long.
++    final long scaled = (x / 1_000_000_000L) * WAD + ((x % 1_000_000_000L) * WAD) / 1_000_000_000L;
++    long y = scaled;
++    long z = (scaled + 1) / 2;
++    while (z < y) {
++      y = z;
++      z = (scaled / z + z) / 2;
++    }
++    return y;
++  }
++
++  /** Min-max normalise a column into [0, WAD]. Constant column becomes WAD, never inverted. */
++  private static long[] normaliseWad(final long[] col, final boolean isCost) {
++    final int n = col.length;
++    final long[] out = new long[n];
++    long lo = col[0];
++    long hi = col[0];
++    for (int i = 1; i < n; i++) {
++      lo = Math.min(lo, col[i]);
++      hi = Math.max(hi, col[i]);
++    }
++    final long range = hi - lo;
++    if (range == 0) {
++      for (int i = 0; i < n; i++) {
++        out[i] = WAD;
++      }
++      return out;
++    }
++    for (int i = 0; i < n; i++) {
++      out[i] = isCost ? wdiv(hi - col[i], range) : wdiv(col[i] - lo, range);
++    }
++    return out;
++  }
++
++  /** Population standard deviation over WAD values, ddof = 0. */
++  private static long stdevWad(final long[] v) {
++    final int n = v.length;
++    if (n < 2) {
++      return 0;
++    }
++    long sum = 0;
++    for (final long x : v) {
++      sum += x;
++    }
++    final long mean = sum / n;
++    long acc = 0;
++    for (final long x : v) {
++      final long d = x - mean;
++      acc += wmul(d, d);
++    }
++    return wsqrt(acc / n);
++  }
++
++  /** Pearson correlation over WAD values, clamped to [-WAD, WAD]. */
++  private static long pearsonWad(final long[] a, final long[] b) {
++    final int n = a.length;
++    if (n < 2) {
++      return 0;
++    }
++    long sa = 0;
++    long sb = 0;
++    for (int i = 0; i < n; i++) {
++      sa += a[i];
++      sb += b[i];
++    }
++    final long ma = sa / n;
++    final long mb = sb / n;
++    long cov = 0;
++    long va = 0;
++    long vb = 0;
++    for (int i = 0; i < n; i++) {
++      final long da = a[i] - ma;
++      final long db = b[i] - mb;
++      cov += wmul(da, db);
++      va += wmul(da, da);
++      vb += wmul(db, db);
++    }
++    if (va == 0 || vb == 0) {
++      return 0;
++    }
++    final long denom = wmul(wsqrt(va), wsqrt(vb));
++    if (denom == 0) {
++      return 0;
++    }
++    final long r = wdiv(cov, denom);
++    return Math.max(-WAD, Math.min(WAD, r));
++  }
++
++  /** CRITIC weights over WAD values, summing to WAD. */
++  private static long[] criticWeightsWad(final long[][] norm) {
++    final int n = norm.length;
++    final long[][] cols = new long[CRITERIA][n];
++    final long[] sigma = new long[CRITERIA];
++    for (int j = 0; j < CRITERIA; j++) {
++      for (int i = 0; i < n; i++) {
++        cols[j][i] = norm[i][j];
++      }
++      sigma[j] = stdevWad(cols[j]);
++    }
++
++    final long[] c = new long[CRITERIA];
++    long total = 0;
++    for (int j = 0; j < CRITERIA; j++) {
++      long conflict = 0;
++      for (int k = 0; k < CRITERIA; k++) {
++        if (j == k) {
++          continue;
++        }
++        final long r = (sigma[j] == 0 || sigma[k] == 0) ? 0 : pearsonWad(cols[j], cols[k]);
++        conflict += WAD - r;
++      }
++      c[j] = wmul(sigma[j], conflict);
++      total += c[j];
++    }
++
++    final long[] w = new long[CRITERIA];
++    for (int j = 0; j < CRITERIA; j++) {
++      w[j] = total > 0 ? wdiv(c[j], total) : WAD / CRITERIA;
++    }
++    return w;
++  }
++
++  /** Number of CRITIC criteria: cpu, latency, reputation, throughput. */
++  /**
++   * Blocks excluded at the top of the window. Scoring must never read a block that some peers may
++   * not have imported yet, or nodes compute different attributes and elect different proposers.
++   */
++  private static final int SCORING_LAG = 2;
++
++  private static final int CRITERIA = 4;
++
++  /** Index of the latency criterion, the only cost-type criterion. */
++  private static final int LATENCY = 1;
+ 
+-    final Map<Address, Attr> attrs = collectAttributes(sequence);
+-    final long window = Math.min(WINDOW, sequence - 1);
+ 
+-    // Worst observed latency, used as the sentinel for validators with no
+-    // successful round-0 proposal. Latency is a COST criterion, so leaving
+-    // them at zero would score a dead node as the fastest on the network.
+-    double worstLatency = 0.0;
++
++
++
++  /**
++   * Derive F-scores for every validator from the attribute window. Deterministic: identical chain
++   * state produces an identical, identically ordered list on every node.
++   *
++   * @param upToBlock the sequence being decided
++   * @return validators sorted by F descending, address ascending on ties
++   */
++  private List<Scored> computeScores(final long upToBlock) {
++    final Map<Address, Attr> attrs = collectAttributes(upToBlock);
++    final List<Scored> out = new ArrayList<>();
++    if (attrs == null) {
++      return out;
++    }
++    final int n = attrs.size();
++    if (n == 0) {
++      return out;
++    }
++    final long window = Math.min(WINDOW, Math.max(0L, upToBlock - SCORING_LAG - 1));
++
++    long worstLatencyWad = 0L;
+     for (final Attr a : attrs.values()) {
+       if (a.latencySamples > 0) {
+-        worstLatency = Math.max(worstLatency, a.latencySum / a.latencySamples);
++        worstLatencyWad = Math.max(worstLatencyWad, (a.latencySecSum * WAD) / a.latencySamples);
+       }
+     }
++
++    final Address[] ids = new Address[n];
++    final long[][] rawWad = new long[n][CRITERIA];
++    int i = 0;
+     for (final Map.Entry<Address, Attr> e : attrs.entrySet()) {
+       final Attr a = e.getValue();
+-      final double cpu = a.proposed > 0 ? a.gasRatioSum / a.proposed : 0.0;
+-      final double latency =
+-          a.latencySamples > 0 ? a.latencySum / a.latencySamples : worstLatency;
+-      final double throughput = window > 0 ? (double) a.seals / (double) window : 0.0;
+-      LOG.info(
+-          "CBBFT-ATTR seq={} v={} cpu={} gas={} latency={} reputation={} throughput={}",
+-          sequence,
+-          e.getKey(),
+-          String.format("%.12f", cpu),
+-          String.format("%.1f", a.proposed > 0 ? a.gasUsedSum / a.proposed : 0.0),
+-          String.format("%.6f", latency),
+-          a.proposed,
+-          String.format("%.6f", throughput));
++      ids[i] = e.getKey();
++      rawWad[i][0] = a.proposed > 0 ? a.gasWadSum / a.proposed : 0L;
++      rawWad[i][LATENCY] =
++          a.latencySamples > 0 ? (a.latencySecSum * WAD) / a.latencySamples : worstLatencyWad;
++      rawWad[i][2] = a.proposed * WAD;
++      rawWad[i][3] = window > 0 ? (a.seals * WAD) / window : 0L;
++      i++;
++    }
++
++    if (n < 2) {
++      out.add(new Scored(ids[0], 0L));
++      return out;
+     }
++
++    final long[][] norm = new long[n][CRITERIA];
++    for (int j = 0; j < CRITERIA; j++) {
++      final long[] col = new long[n];
++      for (int k = 0; k < n; k++) {
++        col[k] = rawWad[k][j];
++      }
++      final long[] normed = normaliseWad(col, j == LATENCY);
++      for (int k = 0; k < n; k++) {
++        norm[k][j] = normed[k];
++      }
++    }
++
++    final long[] w = criticWeightsWad(norm);
++
++    for (int k = 0; k < n; k++) {
++      long f = 0;
++      for (int j = 0; j < CRITERIA; j++) {
++        f += wmul(norm[k][j], w[j]);
++      }
++      out.add(new Scored(ids[k], round4Wad(f)));
++    }
++    Collections.sort(out);
++    return out;
+   }
+ 
++  /**
++   * Split the scored validators into clusters at the first gap exceeding T = mean + 0.5 * sigma of
++   * the consecutive F-score gaps. Simple path only: at n=15 this reliably yields several clusters,
++   * so the coefficient cascade and array-split fallbacks in cbbft_engine.py are not reachable here
++   * and are not implemented. Operates on the already-sorted list, so it is deterministic.
++   *
++   * @param scored validators sorted by F descending
++   * @return index boundaries where a new cluster starts, always including 0
++   */
++  private static List<Integer> clusterBoundaries(final List<Scored> scored) {
++    final List<Integer> starts = new ArrayList<>();
++    starts.add(0);
++    final int n = scored.size();
++    if (n < 3) {
++      return starts;
++    }
++
++    final long[] gaps = new long[n - 1];
++    long sum = 0;
++    for (int i = 0; i < n - 1; i++) {
++      gaps[i] = scored.get(i).f - scored.get(i + 1).f;
++      sum += gaps[i];
++    }
++    final long mean = sum / gaps.length;
++    long acc = 0;
++    for (final long g : gaps) {
++      final long d = g - mean;
++      acc += wmul(d, d);
++    }
++    final long sigma = wsqrt(acc / gaps.length);
++    final long t = mean + sigma / 2;
++
++    for (int i = 0; i < n - 1; i++) {
++      if (gaps[i] > t) {
++        starts.add(i + 1);
++      }
++    }
++    return starts;
++  }
++
++  /**
++   * Choose the proposer from the top cluster's candidate pool. The pool is the top 30 percent of the
++   * cluster with a floor of three, and the round number indexes into it so a failed proposer is
++   * followed by the next candidate rather than a repeat.
++   *
++   * @param scored validators sorted by F descending
++   * @param round the round number within this sequence
++   * @return the elected proposer
++   */
++  private static Address selectFromPool(
++      final List<Scored> scored, final long sequence, final int round) {
++    final List<Integer> starts = clusterBoundaries(scored);
++    final int clusterEnd = starts.size() > 1 ? starts.get(1) : scored.size();
++
++    // Floor of three is clamped against the whole validator set, not the top cluster. Clamping
++    // against the cluster collapses the pool to one whenever the leader separates from the pack,
++    // which then feeds back: sole proposer -> higher proposal count -> wider gap -> sole proposer.
++    final int poolSize =
++        Math.min(scored.size(), Math.max(3, (int) Math.ceil(clusterEnd * 0.30)));
++
++    // Rotate on sequence as well as round, so proposal duty circulates within the pool instead of
++    // resting on its top member. Both values are agreed by every node before the round begins.
++    final int idx = Math.floorMod(sequence + round, poolSize);
++    return scored.get(idx).id;
++  }
++
++  /** Round to 4 decimal places, matching Python round(x, 4) before clustering. */
++  private static long round4Wad(final long x) {
++    final long q = WAD / 10_000L;
++    return x >= 0 ? ((x + q / 2) / q) * q : ((x - q / 2) / q) * q;
++  }
++
++
++
++
+   @Override
+   public Address selectProposerForRound(final ConsensusRoundIdentifier roundIdentifier) {
+-    logAttributes(roundIdentifier.getSequenceNumber());
+-    final Address proposer = delegate.selectProposerForRound(roundIdentifier);
++
++    final long sequence = roundIdentifier.getSequenceNumber();
++    final List<Scored> scored = computeScores(sequence);
++    final Address proposer;
++    if (scored.size() < 3 || sequence <= WINDOW) {
++      // Not enough history for the attributes to mean anything - fall back to round robin so the
++      // chain starts cleanly. Every node applies the same rule at the same height.
++      LOG.info(
++          "CBBFT-FALLBACK seq={} round={} scoredSize={}",
++          sequence,
++          roundIdentifier.getRoundNumber(),
++          scored.size());
++      proposer = delegate.selectProposerForRound(roundIdentifier);
++    } else {
++      proposer = selectFromPool(scored, sequence, roundIdentifier.getRoundNumber());
++      LOG.info(
++          "CBBFT-SELECT seq={} round={} proposer={} topF={}",
++          sequence,
++          roundIdentifier.getRoundNumber(),
++          proposer,
++          String.format("%.4f", (double) scored.get(0).f / WAD));
++    }
+     LOG.info("CBBFT selector active: {} proposer={}", roundIdentifier, proposer);
+     return proposer;
+   }
+-- 
+2.53.0
+

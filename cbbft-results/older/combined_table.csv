@@ -1,0 +1,5 @@
+faults,homo_qbft_mean,homo_qbft_sd,homo_cbbft_mean,homo_cbbft_sd,homo_advantage_pct,tier_qbft_mean,tier_qbft_sd,tier_cbbft_mean,tier_cbbft_sd,tier_advantage_pct
+0,1.997,0.015,2.005,0.012,-0.4,2.067,0.063,2.109,0.144,-2.0
+1,2.241,0.007,2.054,0.017,8.3,2.325,0.111,2.158,0.216,7.2
+2,2.894,0.071,2.166,0.014,25.1,2.650,0.043,2.226,0.076,16.0
+3,3.989,0.318,2.513,0.131,37.0,3.665,0.156,2.540,0.163,30.7

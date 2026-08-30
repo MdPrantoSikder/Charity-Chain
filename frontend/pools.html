@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Validator Pools</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+
+  <!-- Apache ECharts for pool visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+  <style>
+
+    /* ── Pools page layout ── */
+    body {
+      background: var(--bg);
+    }
+
+    .pools-layout {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-brand .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+    }
+
+    .nav-brand .brand-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--sub);
+      text-decoration: none;
+      transition: color 0.18s;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--primary);
+    }
+
+    /* ── Pools container ── */
+    .pools-container {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 48px 80px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 15px;
+      color: var(--sub);
+    }
+
+    /* ── Pool overview cards ── */
+    .pool-overview {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .pool-overview-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.18s;
+      cursor: pointer;
+    }
+
+    .pool-overview-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .pool-overview-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .poc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .poc-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .poc-count {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .poc-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .poc-desc {
+      font-size: 11px;
+      color: var(--sub);
+      line-height: 1.4;
+    }
+
+    /* ── Pool section ── */
+    .pool-section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pool-section-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .psh-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .psh-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .psh-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .psh-desc {
+      font-size: 12px;
+      color: var(--sub);
+      margin-top: 2px;
+    }
+
+    .pool-section-body {
+      padding: 24px;
+    }
+
+    /* ── Node item in pool ── */
+    .pool-node-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .pool-node-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      transition: all 0.18s;
+    }
+
+    .pool-node-card:hover {
+      border-color: var(--primary-light);
+      background: var(--primary-subtle);
+    }
+
+    .pnc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .pnc-id {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pnc-status {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pnc-status::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .pnc-status.active::before {
+      background: var(--success);
+      box-shadow: 0 0 4px var(--success);
+    }
+
+    .pnc-status.watch::before {
+      background: var(--warning);
+    }
+
+    .pnc-status.inactive::before {
+      background: var(--danger);
+    }
+
+    .pnc-org {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .pnc-attrs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .pnc-attr {
+      font-size: 11px;
+    }
+
+    .pnc-attr-label {
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .pnc-attr-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .pnc-fscore {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .pnc-fscore-label {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Visualization section ── */
+    .viz-section {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .viz-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    /* ── Footer ── */
+    .pools-footer {
+      background: var(--text);
+      color: rgba(255,255,255,0.5);
+      padding: 24px 48px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .pools-container { padding: 32px 24px 60px; }
+      .navbar { padding: 0 24px; }
+      .pool-overview { grid-template-columns: 1fr 1fr; }
+      .pool-node-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="pools-layout">
+
+  <!-- ══════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════ -->
+  <nav class="navbar">
+    <a class="nav-brand" href="landing.html">
+      <div class="brand-icon">⛓</div>
+      <div class="brand-name">CharityChain</div>
+    </a>
+
+    <div class="nav-links">
+      <a class="nav-link" href="explorer.html">Block Explorer</a>
+      <a class="nav-link active" href="pools.html">Validator Pools</a>
+      <a class="nav-link" href="consensus.html">Consensus Logs</a>
+      <a class="nav-link" href="landing.html">Home</a>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <a href="index.html" class="btn btn-ghost btn-sm">Login</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════ -->
+  <div class="pools-container">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1 class="page-title">🏊 Validator Pools</h1>
+      <p class="page-subtitle">
+        CB-BFT L5 pool assignments based on F-Score and SGDC clustering
+      </p>
+    </div>
+
+    <!-- Pool overview cards -->
+    <div class="pool-overview">
+      <div class="pool-overview-card" onclick="scrollToPool('elite')">
+        <div class="poc-header">
+          <div class="poc-icon" style="background:rgba(108,99,255,0.1);color:#6C63FF">👑</div>
+          <div class="poc-count" id="elite-count">0</div>
+        </div>
+        <div class="poc-title" style="color:#6C63FF">Elite Pool</div>
+        <div class="poc-desc">
+          Highest F-Score nodes · Reputation ≥ 0.85 · Primary consensus
+        </div>
+      </div>
+
+      <div class="pool-overview-card" onclick="scrollToPool('standard')">
+        <div class="poc-header">
+          <div class="poc-icon" style="background:rgba(59,170,255,0.1);color:#3BAAFF">⭐</div>
+          <div class="poc-count" id="standard-count">0</div>
+        </div>
+        <div class="poc-title" style="color:#3BAAFF">Standard Pool</div>
+        <div class="poc-desc">
+          Mid-tier nodes · Reputation 0.65–0.85 · Backup consensus
+        </div>
+      </div>
+
+      <div class="pool-overview-card" onclick="scrollToPool('observer')">
+        <div class="poc-header">
+          <div class="poc-icon" style="background:rgba(0,201,167,0.1);color:#00C9A7">👁️</div>
+          <div class="poc-count" id="observer-count">0</div>
+        </div>
+        <div class="poc-title" style="color:#00C9A7">Observer Pool</div>
+        <div class="poc-desc">
+          Monitor-only nodes · Reputation 0.35–0.65 · No voting rights
+        </div>
+      </div>
+
+      <div class="pool-overview-card" onclick="scrollToPool('probation')">
+        <div class="poc-header">
+          <div class="poc-icon" style="background:rgba(247,169,53,0.1);color:#F7A935">⚠️</div>
+          <div class="poc-count" id="probation-count">0</div>
+        </div>
+        <div class="poc-title" style="color:#F7A935">Probation Pool</div>
+        <div class="poc-desc">
+          Low reputation nodes · Rep < 0.35 · Under review
+        </div>
+      </div>
+    </div>
+
+    <!-- Visualization -->
+    <div class="viz-section">
+      <div class="viz-title">📊 Pool Distribution Visualization</div>
+      <div id="pools-echart" style="width:100%;height:300px"></div>
+    </div>
+
+    <!-- Elite Pool -->
+    <div class="pool-section" id="pool-elite">
+      <div class="pool-section-header" style="background:rgba(108,99,255,0.05)">
+        <div class="psh-left">
+          <div class="psh-icon" style="background:rgba(108,99,255,0.15);color:#6C63FF">👑</div>
+          <div>
+            <div class="psh-title" style="color:#6C63FF">Elite Pool</div>
+            <div class="psh-desc">
+              Highest reputation and performance · Primary consensus participants
+            </div>
+          </div>
+        </div>
+        <span class="badge badge-elite" id="elite-badge">0 nodes</span>
+      </div>
+      <div class="pool-section-body">
+        <div class="pool-node-grid" id="elite-nodes">
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+            Loading nodes...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Standard Pool -->
+    <div class="pool-section" id="pool-standard">
+      <div class="pool-section-header" style="background:rgba(59,170,255,0.05)">
+        <div class="psh-left">
+          <div class="psh-icon" style="background:rgba(59,170,255,0.15);color:#3BAAFF">⭐</div>
+          <div>
+            <div class="psh-title" style="color:#3BAAFF">Standard Pool</div>
+            <div class="psh-desc">
+              Mid-tier nodes · Backup consensus and validation
+            </div>
+          </div>
+        </div>
+        <span class="badge badge-standard" id="standard-badge">0 nodes</span>
+      </div>
+      <div class="pool-section-body">
+        <div class="pool-node-grid" id="standard-nodes">
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+            Loading nodes...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observer Pool -->
+    <div class="pool-section" id="pool-observer">
+      <div class="pool-section-header" style="background:rgba(0,201,167,0.05)">
+        <div class="psh-left">
+          <div class="psh-icon" style="background:rgba(0,201,167,0.15);color:#00C9A7">👁️</div>
+          <div>
+            <div class="psh-title" style="color:#00C9A7">Observer Pool</div>
+            <div class="psh-desc">
+              Monitor-only nodes · No voting rights in consensus
+            </div>
+          </div>
+        </div>
+        <span class="badge badge-observer" id="observer-badge">0 nodes</span>
+      </div>
+      <div class="pool-section-body">
+        <div class="pool-node-grid" id="observer-nodes">
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+            Loading nodes...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Probation Pool -->
+    <div class="pool-section" id="pool-probation">
+      <div class="pool-section-header" style="background:rgba(247,169,53,0.05)">
+        <div class="psh-left">
+          <div class="psh-icon" style="background:rgba(247,169,53,0.15);color:#F7A935">⚠️</div>
+          <div>
+            <div class="psh-title" style="color:#F7A935">Probation Pool</div>
+            <div class="psh-desc">
+              Low-reputation nodes under review · May be ejected
+            </div>
+          </div>
+        </div>
+        <span class="badge badge-probation" id="probation-badge">0 nodes</span>
+      </div>
+      <div class="pool-section-body">
+        <div class="pool-node-grid" id="probation-nodes">
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+            Loading nodes...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info card -->
+    <div class="viz-section">
+      <div class="viz-title">ℹ️ About CB-BFT Pool Assignment</div>
+      <div style="font-size:13px;color:var(--sub);line-height:1.7">
+        <p style="margin-bottom:12px">
+          <strong>CB-BFT L5 — SGDC Pool Formation:</strong> Nodes are assigned to pools
+          based on their F-Score, which combines reputation, uptime, latency, bandwidth,
+          and stake. The Score-Guided Density Clustering (SGDC) algorithm ensures:
+        </p>
+        <ul style="margin-left:20px;margin-bottom:12px">
+          <li>Organization diversity (Gini coefficient ≤ 0.35 per pool)</li>
+          <li>Minimum pool size enforcement (≥ 3 nodes per pool)</li>
+          <li>Reputation floor (< 0.35 → automatic Probation assignment)</li>
+          <li>Dynamic reclustering when L9 detects JSD drift > 0.15</li>
+        </ul>
+        <p>
+          <strong>Elite Pool</strong> handles primary consensus (L6 VRF-WRLE, L7 BFT, L8 HotStuff).
+          <strong>Standard Pool</strong> serves as backup.
+          <strong>Observer Pool</strong> monitors but doesn't vote.
+          <strong>Probation Pool</strong> is for low-reputation nodes under review.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════ -->
+  <footer class="pools-footer">
+    <div>🏊 CharityChain Validator Pools · CB-BFT L5 SGDC Clustering</div>
+    <div style="margin-top:4px;font-size:12px">
+      © 2025 CharityChain. All rights reserved.
+    </div>
+  </footer>
+
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/socket.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   Validator Pools Logic
+══════════════════════════════════════════════ */
+
+let allNodes = [];
+let poolChart = null;
+
+const POOL_COLORS = {
+  Elite:     '#6C63FF',
+  Standard:  '#3BAAFF',
+  Observer:  '#00C9A7',
+  Probation: '#F7A935'
+};
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadNodes();
+  drawPoolChart();
+  Socket.connect();
+  setupSocketListeners();
+});
+
+/* ── LOAD NODES ── */
+async function loadNodes() {
+  try {
+    allNodes = await AdminAPI.getNodes() || [];
+    
+    if (!allNodes.length) {
+      // Use seed data as fallback
+      allNodes = getSeedNodes();
+    }
+
+    renderPoolCounts();
+    renderPoolNodes();
+    drawPoolChart();
+
+  } catch (err) {
+    console.error('loadNodes:', err);
+    allNodes = getSeedNodes();
+    renderPoolCounts();
+    renderPoolNodes();
+    drawPoolChart();
+  }
+}
+
+/* ── SEED NODES FALLBACK ── */
+function getSeedNodes() {
+  return [
+    { id:'BankA_1', org:'BankA', reputation:0.94, uptime:0.96, latency:0.09, bandwidth:0.92, stake:0.90, F_score:0.93, pool:'Elite',     is_leader:true,  status:'active' },
+    { id:'BankA_2', org:'BankA', reputation:0.91, uptime:0.93, latency:0.11, bandwidth:0.89, stake:0.85, F_score:0.90, pool:'Elite',     is_leader:false, status:'active' },
+    { id:'BankB_1', org:'BankB', reputation:0.88, uptime:0.90, latency:0.14, bandwidth:0.85, stake:0.80, F_score:0.86, pool:'Elite',     is_leader:false, status:'active' },
+    { id:'BankB_2', org:'BankB', reputation:0.86, uptime:0.88, latency:0.16, bandwidth:0.83, stake:0.78, F_score:0.82, pool:'Standard',  is_leader:false, status:'active' },
+    { id:'NGO_A_1', org:'NGO_A', reputation:0.73, uptime:0.77, latency:0.28, bandwidth:0.72, stake:0.64, F_score:0.71, pool:'Standard',  is_leader:false, status:'active' },
+    { id:'NGO_A_2', org:'NGO_A', reputation:0.70, uptime:0.75, latency:0.31, bandwidth:0.69, stake:0.60, F_score:0.68, pool:'Standard',  is_leader:false, status:'active' },
+    { id:'NGO_B_1', org:'NGO_B', reputation:0.75, uptime:0.79, latency:0.26, bandwidth:0.73, stake:0.66, F_score:0.73, pool:'Observer',  is_leader:false, status:'active' },
+    { id:'NGO_B_2', org:'NGO_B', reputation:0.68, uptime:0.73, latency:0.33, bandwidth:0.67, stake:0.59, F_score:0.64, pool:'Observer',  is_leader:false, status:'watch'  },
+    { id:'Hosp_1',  org:'Hosp',  reputation:0.61, uptime:0.66, latency:0.40, bandwidth:0.61, stake:0.57, F_score:0.55, pool:'Probation', is_leader:false, status:'watch'  },
+    { id:'Hosp_2',  org:'Hosp',  reputation:0.58, uptime:0.63, latency:0.43, bandwidth:0.58, stake:0.54, F_score:0.50, pool:'Probation', is_leader:false, status:'inactive'}
+  ];
+}
+
+/* ── RENDER POOL COUNTS ── */
+function renderPoolCounts() {
+  const pools = { Elite:0, Standard:0, Observer:0, Probation:0 };
+  allNodes.forEach(n => {
+    const p = n.pool || 'Observer';
+    if (pools[p] !== undefined) pools[p]++;
+  });
+
+  document.getElementById('elite-count').textContent     = pools.Elite;
+  document.getElementById('standard-count').textContent  = pools.Standard;
+  document.getElementById('observer-count').textContent  = pools.Observer;
+  document.getElementById('probation-count').textContent = pools.Probation;
+
+  document.getElementById('elite-badge').textContent     = pools.Elite + ' nodes';
+  document.getElementById('standard-badge').textContent  = pools.Standard + ' nodes';
+  document.getElementById('observer-badge').textContent  = pools.Observer + ' nodes';
+  document.getElementById('probation-badge').textContent = pools.Probation + ' nodes';
+}
+
+/* ── RENDER POOL NODES ── */
+function renderPoolNodes() {
+  const pools = {
+    Elite:     allNodes.filter(n => n.pool === 'Elite'),
+    Standard:  allNodes.filter(n => n.pool === 'Standard'),
+    Observer:  allNodes.filter(n => n.pool === 'Observer'),
+    Probation: allNodes.filter(n => n.pool === 'Probation')
+  };
+
+  Object.entries(pools).forEach(([pool, nodes]) => {
+    const container = document.getElementById(`${pool.toLowerCase()}-nodes`);
+    
+    if (!nodes.length) {
+      container.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+          No nodes in ${pool} pool
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = nodes.map(n => renderNodeCard(n)).join('');
+  });
+}
+
+/* ── RENDER NODE CARD ── */
+function renderNodeCard(node) {
+  const fscore = (node.F_score || 0).toFixed(3);
+  const barW   = Math.round((node.F_score || 0) * 100);
+  const barClass = node.F_score > 0.7 ? 'high' : node.F_score > 0.4 ? 'medium' : 'low';
+
+  return `
+    <div class="pool-node-card">
+      <div class="pnc-header">
+        <div class="pnc-id">
+          ${node.is_leader ? '👑 ' : ''}${node.id}
+        </div>
+        <div class="pnc-status ${node.status || 'active'}">
+          ${node.status || 'active'}
+        </div>
+      </div>
+
+      <div class="pnc-org">Organization: <strong>${node.org}</strong></div>
+
+      <div class="pnc-attrs">
+        <div class="pnc-attr">
+          <div class="pnc-attr-label">Reputation</div>
+          <div class="pnc-attr-value">${(node.reputation||0).toFixed(2)}</div>
+        </div>
+        <div class="pnc-attr">
+          <div class="pnc-attr-label">Uptime</div>
+          <div class="pnc-attr-value">${(node.uptime||0).toFixed(2)}</div>
+        </div>
+        <div class="pnc-attr">
+          <div class="pnc-attr-label">Latency</div>
+          <div class="pnc-attr-value">${((node.latency||0)*100).toFixed(0)}ms</div>
+        </div>
+        <div class="pnc-attr">
+          <div class="pnc-attr-label">Stake</div>
+          <div class="pnc-attr-value">${(node.stake||0).toFixed(2)}</div>
+        </div>
+      </div>
+
+      <div class="pnc-fscore">
+        <div class="pnc-fscore-label">F-Score</div>
+        <div class="attr-bar-wrap">
+          <div class="attr-bar-track">
+            <div class="attr-bar-fill ${barClass}" style="width:${barW}%"></div>
+          </div>
+          <div class="attr-bar-val" style="font-weight:700;color:var(--text)">
+            ${fscore}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── POOL CHART ── */
+function drawPoolChart() {
+  const el = document.getElementById('pools-echart');
+  if (!el) return;
+
+  if (!poolChart) poolChart = echarts.init(el);
+
+  const pools = { Elite:0, Standard:0, Observer:0, Probation:0 };
+  allNodes.forEach(n => {
+    const p = n.pool || 'Observer';
+    if (pools[p] !== undefined) pools[p]++;
+  });
+
+  poolChart.setOption({
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} nodes ({d}%)'
+    },
+    legend: {
+      bottom: 10,
+      textStyle: { fontSize: 12, color: '#5A5E7A' }
+    },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '60%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: false,
+      label: {
+        show: true,
+        position: 'outside',
+        formatter: '{b}\n{c} nodes',
+        fontSize: 12,
+        fontWeight: 'bold'
+      },
+      labelLine: { show: true },
+      data: [
+        { value: pools.Elite,     name: 'Elite',     itemStyle: { color: POOL_COLORS.Elite } },
+        { value: pools.Standard,  name: 'Standard',  itemStyle: { color: POOL_COLORS.Standard } },
+        { value: pools.Observer,  name: 'Observer',  itemStyle: { color: POOL_COLORS.Observer } },
+        { value: pools.Probation, name: 'Probation', itemStyle: { color: POOL_COLORS.Probation } }
+      ],
+      emphasis: {
+        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.3)' }
+      }
+    }]
+  });
+}
+
+/* ── SCROLL TO POOL ── */
+function scrollToPool(pool) {
+  const el = document.getElementById(`pool-${pool}`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/* ── WEBSOCKET ── */
+function setupSocketListeners() {
+  Socket.on('recluster_complete', async () => {
+    Toast.show('Pool assignments updated!', 'success', 3000);
+    await loadNodes();
+    drawPoolChart();
+  });
+
+  Socket.on('fscore_updated', async () => {
+    await loadNodes();
+    drawPoolChart();
+  });
+}
+</script>
+
+</body>
+</html>

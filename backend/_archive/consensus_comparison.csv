@@ -1,0 +1,4 @@
+protocol,blocks,distinct_leaders,leader_gini,avg_clusters,avg_voters,scoring_ms,consensus_ms,onchain_ms,total_ms,on_chain,on_chain_pct,top_leader,top_leader_pct
+CB-BFT,10,7,0.8067,4.1,8.8,1.575,0.062,5176.387,5186.879,10,100.0,Hosp_B_2,20.0
+Raft,10,1,0.9667,1.0,30.0,0.008,0.018,5407.244,5415.72,10,100.0,BankA_1,100.0
+PBFT,10,10,0.6667,1.0,30.0,0.008,0.02,5468.214,5476.384,10,100.0,BankC_3,10.0

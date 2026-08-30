@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Live CB-BFT Network</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+    body { background: var(--bg); font-family: 'Inter', sans-serif; }
+    .page-wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px; }
+    .page-title { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .page-sub { color: var(--muted); margin-bottom: 32px; font-size: 14px; }
+    .live-badge { display: inline-flex; align-items: center; gap: 6px; background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 24px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .section-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 0 0 16px; display: flex; align-items: center; gap: 10px; }
+    .note { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .nodes-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 32px; }
+    .node-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+    .node-card.proposing { border-color: #16a34a; box-shadow: 0 0 0 1px #16a34a22; }
+    .node-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .node-addr { font-family: monospace; font-size: 10px; color: var(--muted); margin-top: 4px; word-break: break-all; }
+    .node-props { font-size: 20px; font-weight: 700; margin-top: 8px; color: var(--text); }
+    .node-status { margin-top: 2px; font-size: 11px; font-weight: 600; }
+    .st-active { color: #16a34a; } .st-idle { color: #94a3b8; }
+    .blocks-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .blocks-table th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .blocks-table td { padding: 12px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+    .blocks-table tr:hover td { background: #f8fafc; }
+    .hash { font-family: monospace; font-size: 11px; color: #6366f1; cursor: pointer; }
+    .hash:hover { text-decoration: underline; }
+    .badge-on { background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .badge-off { background: #fef3cd; color: #d97706; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .refresh-btn { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .refresh-btn:hover { opacity: 0.9; }
+    .tx-section { margin-top: 32px; }
+    .tx-input-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .tx-input-row input { flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:monospace; }
+    pre#tx-result { background:#1e1e2e; color:#cdd6f4; padding:16px; border-radius:10px; font-size:12px; overflow-x:auto; display:none; }
+    .error-msg { color: #dc2626; font-size: 13px; padding: 12px; background: #fef2f2; border-radius: 8px; margin-bottom:16px; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="live-badge"><div class="live-dot"></div> LIVE NETWORK</div>
+  <div class="page-title">🔗 Hyperledger Besu — CB-BFT Consensus</div>
+  <div class="page-sub">
+    Private network, chain <span id="chain-id">1337</span> •
+    CB-BFT proposer selection compiled into every node (<code>consensus/cbbft</code>) •
+    Contract: <span id="contract-addr">loading…</span>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Chain Height</div>
+      <div class="stat-value" id="block-number">—</div>
+      <div class="stat-sub" id="interval-sub">auto-updates every 5s</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Validators</div>
+      <div class="stat-value" id="validator-count">—</div>
+      <div class="stat-sub" id="quorum-sub">from qbft_getValidatorsByBlockNumber</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Proposing Now</div>
+      <div class="stat-value" id="proposing-count">—</div>
+      <div class="stat-sub">CB-BFT selects from the top pool</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">On-Chain Donations</div>
+      <div class="stat-value" id="onchain-count">—</div>
+      <div class="stat-sub" id="total-count"></div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    🖥️ Validators
+    <span class="note">proposals in the last <span id="window-size">30</span> blocks — read live from the chain</span>
+  </div>
+  <div class="nodes-grid" id="nodes-grid">
+    <div style="grid-column:1/-1;color:var(--muted);font-size:13px">Loading validators…</div>
+  </div>
+
+  <div class="section-title">
+    📦 Donation Transactions
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+  <div id="error-msg"></div>
+  <table class="blocks-table">
+    <thead>
+      <tr>
+        <th>Record</th>
+        <th>Lock TX</th>
+        <th>Block Hash TX</th>
+        <th>Milestone TX</th>
+        <th>Status</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="blocks-tbody">
+      <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Loading…</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tx-section">
+    <div class="section-title">🔍 Verify a Transaction</div>
+    <div class="tx-input-row">
+      <input id="tx-input" type="text" placeholder="Paste a transaction hash to look up on the chain"/>
+      <button class="refresh-btn" onclick="verifyTx()">Verify</button>
+    </div>
+    <pre id="tx-result"></pre>
+  </div>
+</div>
+
+<script>
+const API  = 'http://127.0.0.1:8000';
+const BESU = 'http://127.0.0.1:8545';
+let token = localStorage.getItem('cc_token');
+
+async function besuCall(method, params = []) {
+  const r = await fetch(BESU, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({jsonrpc:'2.0', method, params, id:1})
+  });
+  return (await r.json()).result;
+}
+
+/* Chain height, straight from the node. */
+async function loadHeight() {
+  try {
+    const hex = await besuCall('eth_blockNumber');
+    document.getElementById('block-number').textContent = parseInt(hex,16).toLocaleString();
+  } catch (e) {
+    document.getElementById('block-number').textContent = 'offline';
+  }
+}
+
+/* Validator set and proposal counts come from the backend, which reads them
+   from the chain rather than from any stored table. */
+async function loadConsensus() {
+  try {
+    const info = await (await fetch(`${API}/api/consensus/info`)).json();
+    document.getElementById('validator-count').textContent = info.total_validators;
+    document.getElementById('proposing-count').textContent = info.proposing_in_window;
+    document.getElementById('chain-id').textContent        = info.chain_id;
+    document.getElementById('window-size').textContent     = info.window;
+    document.getElementById('quorum-sub').textContent      = `tolerates f = ${info.f_byzantine} Byzantine`;
+
+    const epoch = await (await fetch(`${API}/api/consensus/epoch`)).json();
+    if (epoch.avg_block_interval) {
+      document.getElementById('interval-sub').textContent =
+        `${epoch.avg_block_interval}s average block interval`;
+    }
+
+    const nodes = await (await fetch(`${API}/api/nodes`)).json();
+    document.getElementById('nodes-grid').innerHTML = nodes.map(n => `
+      <div class="node-card ${n.proposals > 0 ? 'proposing' : ''}">
+        <div class="node-name">${n.is_leader ? '👑 ' : ''}Validator</div>
+        <div class="node-addr">${n.address.slice(0,10)}…${n.address.slice(-6)}</div>
+        <div class="node-props">${n.proposals}</div>
+        <div class="node-status ${n.status === 'active' ? 'st-active' : 'st-idle'}">
+          ${n.status === 'active' ? '● proposing' : '○ not selected'}
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('nodes-grid').innerHTML =
+      `<div style="grid-column:1/-1" class="error-msg">Could not read chain state: ${e.message}</div>`;
+  }
+}
+
+async function loadData() {
+  await loadHeight();
+  await loadConsensus();
+
+  const errDiv = document.getElementById('error-msg');
+  errDiv.innerHTML = '';
+
+  if (!token) {
+    errDiv.innerHTML = '<div class="error-msg">Not logged in — <a href="admin.html">log in as admin</a>, then return here</div>';
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API}/api/transparency/audit`, {
+      headers: {Authorization: `Bearer ${token}`}
+    });
+    const data = await r.json();
+    const donations = Array.isArray(data)
+      ? data.filter(d => d.event_type === 'donation_confirmed') : [];
+
+    const tbody = document.getElementById('blocks-tbody');
+    if (!donations.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No donations yet</td></tr>';
+      document.getElementById('onchain-count').textContent = '0';
+      return;
+    }
+
+    let onChainCount = 0;
+    const total = donations.length;
+
+    tbody.innerHTML = donations.slice().reverse().map((d, i) => {
+      const m = d.meta || {};
+      const lockTx      = m.chain_lock_tx      || '';
+      const blockTx     = m.chain_block_tx     || '';
+      const milestoneTx = m.chain_milestone_tx || '';
+      const onChain     = m.on_chain === true;
+      if (onChain) onChainCount++;
+
+      const short = h => h ? h.slice(0,8) + '…' + h.slice(-6) : '—';
+      const cell  = h => h && h.length > 10 && !h.startsWith('mock_')
+        ? `<span class="hash" onclick="document.getElementById('tx-input').value='0x${h.replace(/^0x/,'')}';verifyTx()">${short(h)}</span>`
+        : `<span style="color:var(--muted);font-size:11px">${h ? 'mocked' : '—'}</span>`;
+
+      const raw = d.timestamp || d.created_at;
+      return `<tr>
+        <td><strong>#${total - i}</strong></td>
+        <td>${cell(lockTx)}</td>
+        <td>${cell(blockTx)}</td>
+        <td>${cell(milestoneTx)}</td>
+        <td>${onChain ? '<span class="badge-on">✓ On-Chain</span>' : '<span class="badge-off">Mocked</span>'}</td>
+        <td>${raw ? new Date(raw).toLocaleTimeString() : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('onchain-count').textContent = onChainCount;
+    document.getElementById('total-count').textContent   = `of ${total} total`;
+  } catch (e) {
+    errDiv.innerHTML = `<div class="error-msg">Error loading data: ${e.message}</div>`;
+  }
+}
+
+/* Look a transaction up on the chain, and show which validator proposed the
+   block that contains it — that proposer was chosen by CB-BFT. */
+async function verifyTx() {
+  let hash = document.getElementById('tx-input').value.trim();
+  if (!hash) return;
+  if (!hash.startsWith('0x')) hash = '0x' + hash;
+
+  const out = document.getElementById('tx-result');
+  out.style.display = 'block';
+  out.textContent = 'Querying the chain…';
+
+  try {
+    const [tx, receipt] = await Promise.all([
+      besuCall('eth_getTransactionByHash', [hash]),
+      besuCall('eth_getTransactionReceipt', [hash])
+    ]);
+    if (!tx) { out.textContent = '❌ Transaction not found on this chain.'; return; }
+
+    const block = await besuCall('eth_getBlockByNumber', [tx.blockNumber, false]);
+
+    out.textContent = JSON.stringify({
+      'verified_on_chain': true,
+      hash:            tx.hash,
+      block_number:    parseInt(tx.blockNumber, 16),
+      block_proposer:  block ? block.miner : null,
+      proposer_note:   'this validator was selected by CB-BFT',
+      from:            tx.from,
+      to:              tx.to,
+      status:          receipt?.status === '0x1' ? 'SUCCESS' : 'FAILED',
+      gas_used:        receipt ? parseInt(receipt.gasUsed, 16) : null,
+      network:         'private Besu network, CB-BFT consensus'
+    }, null, 2);
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+}
+
+/* The contract address is configuration, not something to hardcode in a page. */
+async function loadContract() {
+  try {
+    const s = await (await fetch(`${API}/api/blockchain/status`)).json();
+    document.getElementById('contract-addr').textContent =
+      s.active_smart_contract || s.contract_address || 'not reported';
+  } catch (e) {
+    document.getElementById('contract-addr').textContent = 'unavailable';
+  }
+}
+
+loadContract();
+loadData();
+setInterval(loadHeight, 5000);
+setInterval(loadConsensus, 15000);
+</script>
+</body>
+</html>

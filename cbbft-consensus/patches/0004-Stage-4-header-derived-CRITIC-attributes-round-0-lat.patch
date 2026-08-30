@@ -1,0 +1,207 @@
+From 03e24a4af2c3529b9a4efca463393c58d9c6010c Mon Sep 17 00:00:00 2001
+From: Pranto <your@email.com>
+Date: Fri, 14 Aug 2026 12:37:25 +0600
+Subject: [PATCH 4/6] Stage 4: header-derived CRITIC attributes, round-0
+ latency filter, dead-node sentinel
+
+---
+ .../controller/QbftBesuControllerBuilder.java |   3 +-
+ .../cbbft/CbbftProposerSelector.java          | 141 +++++++++++++++++-
+ stage4a_probe.py                              |   0
+ 3 files changed, 142 insertions(+), 2 deletions(-)
+ create mode 100644 stage4a_probe.py
+
+diff --git a/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java b/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java
+index 04bbbf7176..0d2e456d98 100644
+--- a/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java
++++ b/app/src/main/java/org/hyperledger/besu/controller/QbftBesuControllerBuilder.java
+@@ -234,7 +234,8 @@ public class QbftBesuControllerBuilder extends BesuControllerBuilder {
+ 
+     final ProposerSelector proposerSelector =
+         qbftConfig.isCbbftProposerSelection()
+-            ? new CbbftProposerSelector(blockchain, bftBlockInterface, true, validatorProvider)
++            ? new CbbftProposerSelector(
++                blockchain, bftBlockInterface, true, validatorProvider, qbftExtraDataCodec)
+             : new BftProposerSelector(blockchain, bftBlockInterface, true, validatorProvider);
+ 
+     // NOTE: peers should not be used for accessing the network as it does not enforce the
+diff --git a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+index 283d00822b..995ff47903 100644
+--- a/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
++++ b/consensus/cbbft/src/main/java/org/hyperledger/besu/consensus/cbbft/CbbftProposerSelector.java
+@@ -21,7 +21,16 @@ import org.hyperledger.besu.consensus.common.bft.blockcreation.BftProposerSelect
+ import org.hyperledger.besu.consensus.common.bft.blockcreation.ProposerSelector;
+ import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
+ import org.hyperledger.besu.datatypes.Address;
++import org.hyperledger.besu.consensus.common.bft.BftBlockHashing;
++import org.hyperledger.besu.consensus.common.bft.BftExtraData;
++import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
+ import org.hyperledger.besu.ethereum.chain.Blockchain;
++import org.hyperledger.besu.ethereum.core.BlockHeader;
++
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Optional;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
+@@ -37,7 +46,15 @@ public class CbbftProposerSelector implements ProposerSelector {
+ 
+   private static final Logger LOG = LoggerFactory.getLogger(CbbftProposerSelector.class);
+ 
++  private static final int WINDOW = 100;
++
+   private final ProposerSelector delegate;
++  private final Blockchain blockchain;
++  private final BlockInterface blockInterface;
++  private final ValidatorProvider validatorProvider;
++  private final BftExtraDataCodec extraDataCodec;
++  private final BftBlockHashing blockHashing;
++  private long lastLoggedSequence = -1;
+ 
+   /**
+    * Construct a CB-BFT proposer selector.
+@@ -51,13 +68,135 @@ public class CbbftProposerSelector implements ProposerSelector {
+       final Blockchain blockchain,
+       final BlockInterface blockInterface,
+       final boolean changeEachBlock,
+-      final ValidatorProvider validatorProvider) {
++      final ValidatorProvider validatorProvider,
++      final BftExtraDataCodec extraDataCodec) {
+     this.delegate =
+         new BftProposerSelector(blockchain, blockInterface, changeEachBlock, validatorProvider);
++    this.blockchain = blockchain;
++    this.blockInterface = blockInterface;
++    this.validatorProvider = validatorProvider;
++    this.extraDataCodec = extraDataCodec;
++    this.blockHashing = new BftBlockHashing(extraDataCodec);
++  }
++
++  private static final class Attr {
++    long proposed;
++    long seals;
++    double gasRatioSum;
++    double gasUsedSum;
++    double latencySum;
++    long latencySamples;
++  }
++
++  /**
++   * Walk the last WINDOW headers below upToBlock and derive the four CRITIC criteria for every
++   * current validator. Header data only, so every node computes an identical map.
++   *
++   * @param upToBlock exclusive upper bound, the sequence being decided
++   * @return validator address to raw attributes
++   */
++  private Map<Address, Attr> collectAttributes(final long upToBlock) {
++    final Map<Address, Attr> out = new LinkedHashMap<>();
++    for (final Address v : validatorProvider.getValidatorsAtHead()) {
++      out.put(v, new Attr());
++    }
++
++    final long from = Math.max(1L, upToBlock - WINDOW);
++    for (long n = from; n < upToBlock; n++) {
++      final Optional<BlockHeader> maybe = blockchain.getBlockHeader(n);
++      if (maybe.isEmpty()) {
++        continue;
++      }
++      final BlockHeader h = maybe.get();
++
++      BftExtraData extra = null;
++      try {
++        extra = extraDataCodec.decode(h);
++      } catch (final RuntimeException e) {
++        LOG.debug("CBBFT: could not decode extra data for block {}", n, e);
++      }
++      final boolean round0Only = extra != null && extra.getRound() == 0;
++
++      final Address proposer = blockInterface.getProposerOfBlock(h);
++      final Attr pa = out.get(proposer);
++      if (pa != null) {
++        pa.proposed++;
++        if (h.getGasLimit() > 0) {
++          pa.gasRatioSum += (double) h.getGasUsed() / (double) h.getGasLimit();
++          pa.gasUsedSum += (double) h.getGasUsed();
++        }
++        if (n > 1 && round0Only) {
++          blockchain
++              .getBlockHeader(h.getParentHash())
++              .ifPresent(
++                  parent -> {
++                    pa.latencySum += (double) (h.getTimestamp() - parent.getTimestamp());
++                    pa.latencySamples++;
++                  });
++        }
++      }
++
++      if (extra != null) {
++        try {
++          final List<Address> committers = blockHashing.recoverCommitterAddresses(h, extra);
++          for (final Address c : committers) {
++            final Attr ca = out.get(c);
++            if (ca != null) {
++              ca.seals++;
++            }
++          }
++        } catch (final RuntimeException e) {
++          LOG.debug("CBBFT: could not recover seals for block {}", n, e);
++        }
++      }
++    }
++    return out;
++  }
++
++  /**
++   * Log the derived matrix once per sequence.
++   *
++   * @param sequence the block sequence being decided
++   */
++  private void logAttributes(final long sequence) {
++    if (sequence == lastLoggedSequence || sequence <= 1) {
++      return;
++    }
++    lastLoggedSequence = sequence;
++
++    final Map<Address, Attr> attrs = collectAttributes(sequence);
++    final long window = Math.min(WINDOW, sequence - 1);
++
++    // Worst observed latency, used as the sentinel for validators with no
++    // successful round-0 proposal. Latency is a COST criterion, so leaving
++    // them at zero would score a dead node as the fastest on the network.
++    double worstLatency = 0.0;
++    for (final Attr a : attrs.values()) {
++      if (a.latencySamples > 0) {
++        worstLatency = Math.max(worstLatency, a.latencySum / a.latencySamples);
++      }
++    }
++    for (final Map.Entry<Address, Attr> e : attrs.entrySet()) {
++      final Attr a = e.getValue();
++      final double cpu = a.proposed > 0 ? a.gasRatioSum / a.proposed : 0.0;
++      final double latency =
++          a.latencySamples > 0 ? a.latencySum / a.latencySamples : worstLatency;
++      final double throughput = window > 0 ? (double) a.seals / (double) window : 0.0;
++      LOG.info(
++          "CBBFT-ATTR seq={} v={} cpu={} gas={} latency={} reputation={} throughput={}",
++          sequence,
++          e.getKey(),
++          String.format("%.12f", cpu),
++          String.format("%.1f", a.proposed > 0 ? a.gasUsedSum / a.proposed : 0.0),
++          String.format("%.6f", latency),
++          a.proposed,
++          String.format("%.6f", throughput));
++    }
+   }
+ 
+   @Override
+   public Address selectProposerForRound(final ConsensusRoundIdentifier roundIdentifier) {
++    logAttributes(roundIdentifier.getSequenceNumber());
+     final Address proposer = delegate.selectProposerForRound(roundIdentifier);
+     LOG.info("CBBFT selector active: {} proposer={}", roundIdentifier, proposer);
+     return proposer;
+diff --git a/stage4a_probe.py b/stage4a_probe.py
+new file mode 100644
+index 0000000000..e69de29bb2
+-- 
+2.53.0
+

@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Transaction Logs</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+    body { background: #0a0e1a; color: #e0e6ff; font-family: 'Courier New', monospace; }
+
+    .tx-layout {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .tx-topbar {
+      background: #111827;
+      border-bottom: 1px solid #1e293b;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .tx-topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .tx-logo {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f59e0b;
+      letter-spacing: 0.05em;
+    }
+
+    .tx-nav {
+      display: flex;
+      gap: 0;
+    }
+
+    .tx-nav-item {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.18s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tx-nav-item:hover { color: #e0e6ff; }
+    .tx-nav-item.active {
+      color: #f59e0b;
+      border-bottom-color: #f59e0b;
+    }
+
+    /* Network info bar */
+    .network-bar {
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-size: 11px;
+      flex-wrap: wrap;
+    }
+
+    .nb-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nb-label {
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+    }
+
+    .nb-value {
+      color: #f59e0b;
+      font-weight: 700;
+    }
+
+    .nb-value.green { color: #22c55e; }
+    .nb-value.blue  { color: #3b82f6; }
+    .nb-value.red   { color: #ef4444; }
+
+    .mining-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #22c55e;
+      font-weight: 700;
+    }
+
+    .mining-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── Main container ── */
+    .tx-container {
+      flex: 1;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Contract event card ── */
+    .event-card {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: border-color 0.18s;
+    }
+
+    .event-card:hover {
+      border-color: #f59e0b;
+    }
+
+    .event-card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0f172a;
+    }
+
+    .event-hash {
+      font-size: 13px;
+      color: #f59e0b;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.18s;
+    }
+
+    .event-hash:hover { opacity: 0.7; }
+
+    .event-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+    }
+
+    .event-block {
+      color: #64748b;
+    }
+
+    .event-block span {
+      color: #3b82f6;
+      font-weight: 700;
+    }
+
+    .event-time {
+      color: #475569;
+    }
+
+    .event-card-body {
+      padding: 20px;
+    }
+
+    /* Contract name + address */
+    .contract-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .cr-item {}
+
+    .cr-label {
+      font-size: 10px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .cr-value {
+      font-size: 13px;
+      color: #e0e6ff;
+      font-weight: 600;
+    }
+
+    .cr-value.address {
+      color: #3b82f6;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .cr-value.address:hover { text-decoration: underline; }
+
+    /* Signature decoded */
+    .sig-row {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .sig-label {
+      font-size: 10px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .sig-value {
+      font-size: 12px;
+      color: #a78bfa;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+      word-break: break-all;
+    }
+
+    /* Return values */
+    .return-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .return-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .return-item {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .ri-label {
+      font-size: 10px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .ri-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #22c55e;
+      word-break: break-all;
+    }
+
+    .ri-value.hash {
+      font-size: 11px;
+      color: #f59e0b;
+    }
+
+    .ri-value.amount {
+      color: #22c55e;
+      font-size: 18px;
+    }
+
+    .ri-value.id {
+      color: #3b82f6;
+      font-size: 12px;
+    }
+
+    /* ── Filter tabs ── */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #1e293b;
+      background: #111827;
+      color: #64748b;
+      transition: all 0.18s;
+      font-family: 'Courier New', monospace;
+    }
+
+    .filter-tab:hover { border-color: #f59e0b; color: #f59e0b; }
+    .filter-tab.active {
+      background: #f59e0b;
+      color: #0a0e1a;
+      border-color: #f59e0b;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-box {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .sb-label {
+      font-size: 10px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .sb-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f59e0b;
+    }
+
+    .sb-sub {
+      font-size: 10px;
+      color: #475569;
+      margin-top: 3px;
+    }
+
+    /* ── Search ── */
+    .search-bar {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search-bar input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      color: #e0e6ff;
+    }
+
+    .search-bar input::placeholder { color: #475569; }
+
+    /* ── Empty state ── */
+    .tx-empty {
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 60px 40px;
+      text-align: center;
+      color: #475569;
+    }
+
+    .tx-empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .tx-empty-title { font-size: 16px; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+    .tx-empty-desc  { font-size: 13px; }
+
+    /* ── Loading ── */
+    .tx-loading {
+      text-align: center;
+      padding: 40px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    @media (max-width: 768px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .contract-row { grid-template-columns: 1fr; }
+      .network-bar { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="tx-layout">
+
+  <!-- ── Top Navigation ── -->
+  <div class="tx-topbar">
+    <div class="tx-topbar-left">
+      <div class="tx-logo">⛓ CharityChain</div>
+      <nav class="tx-nav">
+        <a class="tx-nav-item" href="landing.html">🏠 Home</a>
+        <a class="tx-nav-item" href="explorer.html">📦 Blocks</a>
+        <a class="tx-nav-item active" href="transactions.html">↔ Transactions</a>
+        <a class="tx-nav-item" href="transactions.html">📋 Contracts</a>
+        <a class="tx-nav-item" href="transactions.html">🔔 Events</a>
+        <a class="tx-nav-item" href="transactions.html">📄 Logs</a>
+      </nav>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="mining-status">
+        <div class="mining-dot"></div>
+        AUTOMINING
+      </div>
+      <a href="index.html" class="filter-tab">Login</a>
+    </div>
+  </div>
+
+  <!-- ── Network Info Bar ── -->
+  <div class="network-bar">
+    <div class="nb-item">
+      <span class="nb-label">Current Block</span>
+      <span class="nb-value" id="nb-block">—</span>
+    </div>
+    <div class="nb-item">
+      <span class="nb-label">Gas Price</span>
+      <span class="nb-value">0</span>
+    </div>
+    <div class="nb-item">
+      <span class="nb-label">Network ID</span>
+      <span class="nb-value blue">1337</span>
+    </div>
+    <div class="nb-item">
+      <span class="nb-label">RPC Server</span>
+      <span class="nb-value green">HTTP://127.0.0.1:8000</span>
+    </div>
+    <div class="nb-item">
+      <span class="nb-label">Mining Status</span>
+      <span class="nb-value green">AUTOMINING</span>
+    </div>
+    <div class="nb-item" style="margin-left:auto">
+      <span class="nb-label">Contract</span>
+      <span class="nb-value" id="nb-contract">CharityChain ABPC v1.0</span>
+    </div>
+  </div>
+
+  <!-- ── Main Content ── -->
+  <div class="tx-container">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="sb-label">Total Blocks</div>
+        <div class="sb-value" id="total-blocks">0</div>
+        <div class="sb-sub">On chain</div>
+      </div>
+      <div class="stat-box">
+        <div class="sb-label">Transactions</div>
+        <div class="sb-value" id="total-txns">0</div>
+        <div class="sb-sub">All events</div>
+      </div>
+      <div class="stat-box">
+        <div class="sb-label">Total Volume</div>
+        <div class="sb-value" id="total-volume">$0</div>
+        <div class="sb-sub">Donations confirmed</div>
+      </div>
+      <div class="stat-box">
+        <div class="sb-label">Active Nodes</div>
+        <div class="sb-value" id="total-nodes">30</div>
+        <div class="sb-sub">Validator network</div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <span style="color:#475569;font-size:16px">🔍</span>
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search by Tx Hash, Block #, Donor ID, Case ID..."
+        oninput="filterLogs()"
+      />
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="setFilter('all', this)">
+        All Events
+      </div>
+      <div class="filter-tab" onclick="setFilter('donation_confirmed', this)">
+        DonationCreated
+      </div>
+      <div class="filter-tab" onclick="setFilter('case_submitted', this)">
+        CaseSubmitted
+      </div>
+      <div class="filter-tab" onclick="setFilter('case_approved', this)">
+        CaseApproved
+      </div>
+      <div class="filter-tab" onclick="setFilter('jsd_drift_detected', this)">
+        JSD Drift
+      </div>
+      <div class="filter-tab" onclick="setFilter('consensus_failed', this)">
+        ConsensusFailed
+      </div>
+    </div>
+
+    <!-- Transaction logs -->
+    <div id="logs-container">
+      <div class="tx-loading">
+        <div style="font-size:24px;margin-bottom:8px">⛓</div>
+        Loading transaction logs...
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/socket.js"></script>
+
+<script>
+
+let allLogs    = [];
+let allBlocks  = [];
+let activeFilter = 'all';
+
+/* ── CONTRACT ADDRESS (deterministic from system) ── */
+const CONTRACT_ADDRESS = '0x' + Array.from(
+  new TextEncoder().encode('CharityChainABPC')
+).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 40);
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  await Promise.all([loadLogs(), loadBlocks()]);
+  setInterval(async () => {
+    await Promise.all([loadLogs(), loadBlocks()]);
+  }, 15000);
+});
+
+/* ── LOAD AUDIT LOGS ── */
+async function loadLogs() {
+  try {
+    allLogs = await BlockchainAPI.getAuditLog() || [];
+    updateStats();
+    renderLogs();
+  } catch (err) {
+    console.error('loadLogs:', err);
+    document.getElementById('logs-container').innerHTML = `
+      <div class="tx-empty">
+        <div class="tx-empty-icon">⚠️</div>
+        <div class="tx-empty-title">Cannot connect to backend</div>
+        <div class="tx-empty-desc">Make sure the server is running on port 8000</div>
+      </div>`;
+  }
+}
+
+/* ── LOAD BLOCKS ── */
+async function loadBlocks() {
+  try {
+    allBlocks = await BlockchainAPI.getChain() || [];
+    const latest = allBlocks.length > 0
+      ? allBlocks[allBlocks.length - 1].index
+      : 0;
+    document.getElementById('nb-block').textContent = latest;
+    document.getElementById('total-blocks').textContent = allBlocks.length;
+  } catch (err) {
+    console.error('loadBlocks:', err);
+  }
+}
+
+/* ── UPDATE STATS ── */
+function updateStats() {
+  const txns = allLogs.filter(l => l.event_type === 'donation_confirmed');
+  const volume = txns.reduce((sum, l) => {
+    const meta = l.meta || {};
+    return sum + (meta.amount || 0);
+  }, 0);
+
+  document.getElementById('total-txns').textContent   = allLogs.length;
+  document.getElementById('total-volume').textContent  = '$' + volume.toLocaleString();
+}
+
+/* ── SET FILTER ── */
+function setFilter(type, el) {
+  activeFilter = type;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderLogs();
+}
+
+/* ── FILTER LOGS ── */
+function filterLogs() {
+  renderLogs();
+}
+
+/* ── RENDER LOGS ── */
+function renderLogs() {
+  const container = document.getElementById('logs-container');
+  const query     = document.getElementById('search-input').value.toLowerCase();
+
+  let filtered = allLogs;
+
+  // Apply event type filter
+  if (activeFilter !== 'all') {
+    filtered = filtered.filter(l => l.event_type === activeFilter);
+  }
+
+  // Apply search filter
+  if (query) {
+    filtered = filtered.filter(l => {
+      const meta = l.meta || {};
+      return (
+        (l.tx_hash     && l.tx_hash.toLowerCase().includes(query)) ||
+        (l.event_type  && l.event_type.toLowerCase().includes(query)) ||
+        (l.description && l.description.toLowerCase().includes(query)) ||
+        (l.actor_id    && l.actor_id.toLowerCase().includes(query)) ||
+        (meta.block_id && meta.block_id.toLowerCase().includes(query))
+      );
+    });
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="tx-empty">
+        <div class="tx-empty-icon">📋</div>
+        <div class="tx-empty-title">No transactions found</div>
+        <div class="tx-empty-desc">Try a different filter or make a donation first</div>
+      </div>`;
+    return;
+  }
+
+  // Sort newest first
+  const sorted = [...filtered].sort(
+    (a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0)
+  );
+
+  container.innerHTML = sorted.map((log, idx) => renderEventCard(log, idx)).join('');
+}
+
+/* ── RENDER EVENT CARD ── */
+function renderEventCard(log, idx) {
+  const meta      = log.meta || {};
+  const eventType = log.event_type || 'unknown';
+  const time      = log.timestamp
+    ? new Date(log.timestamp).toLocaleString()
+    : '—';
+  const txHash    = log.tx_hash || ('0x' + '0'.repeat(64));
+  const blockNum  = meta.block_id ? '#' + (allBlocks.findIndex(b => b.id === meta.block_id) + 1) : '#' + (allBlocks.length - idx);
+  const logIndex  = idx;
+
+  // Build signature and return values based on event type
+  let signature   = '';
+  let returnValues = [];
+  let cardColor   = '#f59e0b';
+
+  if (eventType === 'donation_confirmed') {
+    cardColor  = '#22c55e';
+    signature  = `DonationCreated(donation_id: string, donor_id: string, case_id: string, amount: uint256, block_hash: string, leader_node: string, pool: string, escrow_proof: string)`;
+    returnValues = [
+      { label: 'DONATION_ID',   value: log.actor_id || '—',         type: 'id' },
+      { label: 'DONOR_ID',      value: log.actor_id || '—',         type: 'id' },
+      { label: 'AMOUNT',        value: '$' + (meta.amount || extractAmount(log.description)), type: 'amount' },
+      { label: 'BLOCK_HASH',    value: txHash.substring(0, 20) + '...', type: 'hash' },
+      { label: 'LEADER_NODE',   value: meta.leader || '—',          type: 'id' },
+      { label: 'POOL',          value: meta.pool || 'Elite',         type: 'id' },
+      { label: 'JSD_SCORE',     value: meta.jsd ? meta.jsd.toFixed(4) : '—', type: 'id' },
+      { label: 'ESCROW_PROOF',  value: meta.escrow_proof ? meta.escrow_proof.substring(0, 16) + '...' : '—', type: 'hash' },
+    ];
+  } else if (eventType === 'case_submitted') {
+    cardColor  = '#3b82f6';
+    signature  = `CaseSubmitted(case_id: string, needy_id: string, title: string, amount_needed: uint256)`;
+    returnValues = [
+      { label: 'NEEDY_ID',      value: log.actor_id || '—',    type: 'id' },
+      { label: 'DESCRIPTION',   value: log.description || '—', type: 'id' },
+      { label: 'STATUS',        value: 'pending',               type: 'id' },
+    ];
+  } else if (eventType === 'case_approved') {
+    cardColor  = '#22c55e';
+    signature  = `CaseApproved(case_id: string, trustee_id: string, approved_at: string)`;
+    returnValues = [
+      { label: 'TRUSTEE_ID',    value: log.actor_id || '—',    type: 'id' },
+      { label: 'DESCRIPTION',   value: log.description || '—', type: 'id' },
+      { label: 'STATUS',        value: 'approved',              type: 'id' },
+    ];
+  } else if (eventType === 'case_rejected') {
+    cardColor  = '#ef4444';
+    signature  = `CaseRejected(case_id: string, trustee_id: string, reason: string)`;
+    returnValues = [
+      { label: 'TRUSTEE_ID',    value: log.actor_id || '—',    type: 'id' },
+      { label: 'DESCRIPTION',   value: log.description || '—', type: 'id' },
+      { label: 'STATUS',        value: 'rejected',              type: 'id' },
+    ];
+  } else if (eventType === 'jsd_drift_detected') {
+    cardColor  = '#f59e0b';
+    signature  = `JSDDriftDetected(jsd_score: uint256, epoch: uint256, threshold: uint256)`;
+    returnValues = [
+      { label: 'JSD_SCORE',     value: meta.jsd ? meta.jsd.toFixed(6) : '—', type: 'amount' },
+      { label: 'EPOCH',         value: meta.epoch || '—',       type: 'id' },
+      { label: 'THRESHOLD',     value: '0.1500',                type: 'id' },
+      { label: 'ACTION',        value: 'RECLUSTER',             type: 'id' },
+    ];
+  } else if (eventType === 'consensus_failed') {
+    cardColor  = '#ef4444';
+    signature  = `ConsensusFailed(tx_id: string, reason: string, epoch: uint256)`;
+    returnValues = [
+      { label: 'REASON',        value: log.description || '—', type: 'id' },
+      { label: 'ACTOR_ID',      value: log.actor_id || '—',    type: 'id' },
+      { label: 'STATUS',        value: 'FAILED',                type: 'id' },
+    ];
+  } else if (eventType === 'trustee_approved') {
+    cardColor  = '#22c55e';
+    signature  = `TrusteeApproved(trustee_id: string, admin_id: string)`;
+    returnValues = [
+      { label: 'ADMIN_ID',      value: log.actor_id || '—',    type: 'id' },
+      { label: 'DESCRIPTION',   value: log.description || '—', type: 'id' },
+      { label: 'STATUS',        value: 'verified',              type: 'id' },
+    ];
+  } else {
+    signature  = `${eventType}(actor_id: string, description: string)`;
+    returnValues = [
+      { label: 'ACTOR_ID',      value: log.actor_id || '—',    type: 'id' },
+      { label: 'DESCRIPTION',   value: log.description || '—', type: 'id' },
+    ];
+  }
+
+  return `
+    <div class="event-card">
+      <div class="event-card-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="color:${cardColor};font-size:11px;font-weight:700;
+            background:${cardColor}22;padding:3px 10px;border-radius:4px;
+            border:1px solid ${cardColor}44">
+            ${formatEventName(eventType)}
+          </span>
+          <span class="event-hash"
+            onclick="copyHash('${txHash}', this)"
+            title="Click to copy">
+            ${txHash.substring(0, 66)}
+          </span>
+        </div>
+        <div class="event-meta">
+          <div class="event-block">
+            LOG INDEX <span>${logIndex}</span>
+          </div>
+          <div class="event-block">
+            BLOCK TIME <span style="color:#94a3b8">${time}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="event-card-body">
+
+        <!-- Contract info -->
+        <div class="contract-row">
+          <div class="cr-item">
+            <div class="cr-label">Contract Name</div>
+            <div class="cr-value">CharityChain ABPC</div>
+          </div>
+          <div class="cr-item">
+            <div class="cr-label">Contract Address</div>
+            <div class="cr-value address"
+              onclick="copyHash('${CONTRACT_ADDRESS}', this)">
+              ${CONTRACT_ADDRESS}
+            </div>
+          </div>
+        </div>
+
+        <!-- Signature decoded -->
+        <div class="sig-row">
+          <div class="sig-label">Signature Decoded</div>
+          <div class="sig-value">${signature}</div>
+        </div>
+
+        <!-- Return values -->
+        <div class="return-title">Return Values</div>
+        <div class="return-grid">
+          ${returnValues.map(rv => `
+            <div class="return-item">
+              <div class="ri-label">${rv.label}</div>
+              <div class="ri-value ${rv.type}">${rv.value}</div>
+            </div>
+          `).join('')}
+        </div>
+
+      </div>
+    </div>`;
+}
+
+/* ── HELPERS ── */
+function formatEventName(type) {
+  const map = {
+    'donation_confirmed':  '💰 DonationCreated',
+    'case_submitted':      '📋 CaseSubmitted',
+    'case_approved':       '✅ CaseApproved',
+    'case_rejected':       '❌ CaseRejected',
+    'jsd_drift_detected':  '⚠️ JSDDrift',
+    'consensus_failed':    '🔴 ConsensusFailed',
+    'trustee_approved':    '🏦 TrusteeApproved',
+  };
+  return map[type] || type;
+}
+
+function extractAmount(description) {
+  if (!description) return 0;
+  const match = description.match(/\$([0-9.]+)/);
+  return match ? parseFloat(match[1]) : 0;
+}
+
+</script>
+
+</body>
+</html>

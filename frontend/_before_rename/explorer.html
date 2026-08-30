@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CharityChain — Block Explorer</title>
+  <link rel="stylesheet" href="css/shared.css"/>
+  <style>
+
+    /* ── Explorer specific layout ── */
+    body {
+      background: var(--bg);
+    }
+
+    .explorer-layout {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-brand .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+    }
+
+    .nav-brand .brand-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--sub);
+      text-decoration: none;
+      transition: color 0.18s;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--primary);
+    }
+
+    /* ── Explorer container ── */
+    .explorer-container {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 48px 80px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 15px;
+      color: var(--sub);
+    }
+
+    /* ── Search bar ── */
+    .explorer-search {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search-icon {
+      font-size: 20px;
+      color: var(--muted);
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      font-family: var(--font-mono);
+      color: var(--text);
+    }
+
+    .search-input::placeholder {
+      color: var(--muted);
+      font-family: var(--font-sans);
+    }
+
+    /* ── Stats row ── */
+    .explorer-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .explorer-stat {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .es-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .es-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .es-sub {
+      font-size: 11px;
+      color: var(--success);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* ── Block card ── */
+    .block-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: all 0.18s;
+    }
+
+    .block-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .block-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }
+
+    .block-card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .block-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .block-num {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .block-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .block-card-body {
+      padding: 20px;
+    }
+
+    .block-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .block-detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bdi-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .bdi-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .bdi-value.hash {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--primary);
+      cursor: pointer;
+    }
+
+    .bdi-value.hash:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Transaction row ── */
+    .tx-list {
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .tx-list-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--sub);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .tx-item:last-child {
+      border-bottom: none;
+    }
+
+    .tx-icon-wrap {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--success-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .tx-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tx-from-to {
+      font-size: 12px;
+      color: var(--sub);
+      margin-bottom: 2px;
+    }
+
+    .tx-hash {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .tx-hash:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    .tx-amount {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    /* ── Empty state ── */
+    .explorer-empty {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 60px 40px;
+      text-align: center;
+    }
+
+    .explorer-empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .explorer-empty-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .explorer-empty-desc {
+      font-size: 14px;
+      color: var(--sub);
+    }
+
+    /* ── Footer ── */
+    .explorer-footer {
+      background: var(--text);
+      color: rgba(255,255,255,0.5);
+      padding: 24px 48px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .explorer-container { padding: 32px 24px 60px; }
+      .navbar { padding: 0 24px; }
+      .explorer-stats { grid-template-columns: 1fr 1fr; }
+      .block-detail-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="explorer-layout">
+
+  <!-- ══════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════ -->
+  <nav class="navbar">
+    <a class="nav-brand" href="landing.html">
+      <div class="brand-icon">⛓</div>
+      <div class="brand-name">CharityChain</div>
+    </a>
+
+    <div class="nav-links">
+      <a class="nav-link active" href="explorer.html">Block Explorer</a>
+      <a class="nav-link" href="pools.html">Validator Pools</a>
+      <a class="nav-link" href="consensus.html">Consensus Logs</a>
+      <a class="nav-link" href="landing.html">Home</a>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <a href="index.html" class="btn btn-ghost btn-sm">Login</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════ -->
+  <div class="explorer-container">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1 class="page-title">🔍 Block Explorer</h1>
+      <p class="page-subtitle">
+        Real-time blockchain explorer for CharityChain transactions and blocks
+      </p>
+    </div>
+
+    <!-- Search bar -->
+    <div class="explorer-search">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        id="explorer-search-input"
+        placeholder="Search by Block Height, Block Hash, Transaction Hash, or Case ID..."
+        onkeypress="handleSearchKeypress(event)"
+      />
+      <button class="btn btn-primary" onclick="performSearch()">
+        Search
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="explorer-stats">
+      <div class="explorer-stat">
+        <div class="es-label">Total Blocks</div>
+        <div class="es-value" id="stat-blocks">0</div>
+        <div class="es-sub">↑ Live updating</div>
+      </div>
+      <div class="explorer-stat">
+        <div class="es-label">Transactions</div>
+        <div class="es-value" id="stat-txns">0</div>
+        <div class="es-sub">↑ All time</div>
+      </div>
+      <div class="explorer-stat">
+        <div class="es-label">Validators</div>
+        <div class="es-value" id="stat-validators">10</div>
+        <div class="es-sub">● Online</div>
+      </div>
+      <div class="explorer-stat">
+        <div class="es-label">Avg Block Time</div>
+        <div class="es-value" id="stat-blocktime">12s</div>
+        <div class="es-sub">Last 100 blocks</div>
+      </div>
+    </div>
+
+    <!-- Blocks list -->
+    <div id="blocks-container">
+      <div class="explorer-empty">
+        <div class="explorer-empty-icon">⛓️</div>
+        <div class="explorer-empty-title">Loading blockchain...</div>
+        <div class="explorer-empty-desc">
+          Fetching latest blocks from CharityChain network
+        </div>
+      </div>
+    </div>
+
+    <!-- Load more -->
+    <div id="load-more-container" style="text-align:center;margin-top:24px;display:none">
+      <button class="btn btn-outline" onclick="loadMoreBlocks()">
+        Load More Blocks
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════ -->
+  <footer class="explorer-footer">
+    <div>⛓ CharityChain Block Explorer · Powered by ABPC Consensus</div>
+    <div style="margin-top:4px;font-size:12px">
+      © 2025 CharityChain. All rights reserved.
+    </div>
+  </footer>
+
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/socket.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   Block Explorer Logic
+══════════════════════════════════════════════ */
+
+let allBlocks     = [];
+let displayedCount = 20;
+let searchQuery   = '';
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadBlockchain();
+  Socket.connect();
+  setupSocketListeners();
+});
+
+/* ── LOAD BLOCKCHAIN ── */
+async function loadBlockchain() {
+  try {
+    allBlocks = await BlockchainAPI.getChain() || [];
+    
+    // Sort by index descending (newest first)
+    allBlocks.sort((a, b) => (b.index || 0) - (a.index || 0));
+
+    updateStats();
+    renderBlocks();
+
+  } catch (err) {
+    console.error('loadBlockchain:', err);
+    // Show error state
+    document.getElementById('blocks-container').innerHTML = `
+      <div class="explorer-empty">
+        <div class="explorer-empty-icon">⚠️</div>
+        <div class="explorer-empty-title">Unable to load blockchain</div>
+        <div class="explorer-empty-desc">
+          ${err.message || 'Please try again later'}
+        </div>
+      </div>`;
+  }
+}
+
+/* ── UPDATE STATS ── */
+function updateStats() {
+  const totalBlocks = allBlocks.length;
+  const totalTxns   = allBlocks.reduce((sum, b) => {
+    const txData = b.tx_data || {};
+    return sum + (txData.tx_id ? 1 : 0);
+  }, 0);
+
+  document.getElementById('stat-blocks').textContent = totalBlocks.toLocaleString();
+  document.getElementById('stat-txns').textContent   = totalTxns.toLocaleString();
+
+  // Calculate avg block time
+  if (allBlocks.length >= 2) {
+    const recent = allBlocks.slice(0, Math.min(100, allBlocks.length));
+    let totalTime = 0;
+    let count = 0;
+
+    for (let i = 1; i < recent.length; i++) {
+      const t1 = new Date(recent[i-1].timestamp).getTime();
+      const t2 = new Date(recent[i].timestamp).getTime();
+      if (!isNaN(t1) && !isNaN(t2)) {
+        totalTime += Math.abs(t1 - t2);
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      const avgMs = totalTime / count;
+      const avgSec = Math.round(avgMs / 1000);
+      document.getElementById('stat-blocktime').textContent = avgSec + 's';
+    }
+  }
+}
+
+/* ── RENDER BLOCKS ── */
+function renderBlocks() {
+  const container = document.getElementById('blocks-container');
+  
+  if (!allBlocks.length) {
+    container.innerHTML = `
+      <div class="explorer-empty">
+        <div class="explorer-empty-icon">⛓️</div>
+        <div class="explorer-empty-title">No blocks found</div>
+        <div class="explorer-empty-desc">
+          The blockchain is empty or not yet initialized
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Filter by search query if present
+  let filtered = allBlocks;
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = allBlocks.filter(b => {
+      const txData = b.tx_data || {};
+      return (
+        (b.index && b.index.toString().includes(q)) ||
+        (b.block_hash && b.block_hash.toLowerCase().includes(q)) ||
+        (txData.tx_id && txData.tx_id.toLowerCase().includes(q)) ||
+        (txData.case_id && txData.case_id.toLowerCase().includes(q))
+      );
+    });
+  }
+
+  // Show subset
+  const displayed = filtered.slice(0, displayedCount);
+
+  if (!displayed.length) {
+    container.innerHTML = `
+      <div class="explorer-empty">
+        <div class="explorer-empty-icon">🔍</div>
+        <div class="explorer-empty-title">No results found</div>
+        <div class="explorer-empty-desc">
+          Try a different search term
+        </div>
+      </div>`;
+    document.getElementById('load-more-container').style.display = 'none';
+    return;
+  }
+
+  container.innerHTML = displayed.map(renderBlockCard).join('');
+
+  // Show/hide load more button
+  const loadMoreBtn = document.getElementById('load-more-container');
+  if (filtered.length > displayedCount) {
+    loadMoreBtn.style.display = 'block';
+  } else {
+    loadMoreBtn.style.display = 'none';
+  }
+}
+
+/* ── RENDER BLOCK CARD ── */
+function renderBlockCard(block) {
+  const txData = block.tx_data || {};
+  const index  = block.index || 0;
+  const hash   = block.block_hash || '';
+  const prev   = block.prev_hash || '';
+  const time   = block.timestamp 
+    ? new Date(block.timestamp).toLocaleString()
+    : '—';
+  
+  const leader = block.leader_node || 'Node_1';
+  const pool   = block.pool || 'Elite';
+  
+  const txId     = txData.tx_id || txData.donation_id || '';
+  const caseId   = txData.case_id || '';
+  const donor    = txData.donor_name || txData.donor_id || '—';
+  const needy    = txData.needy_name || txData.needy_id || '—';
+  const amount   = txData.amount || 0;
+  const category = txData.category || '';
+  const hasTx    = !!(txData.donation_id || txData.amount);
+
+  return `
+    <div class="block-card">
+      <div class="block-card-header">
+        <div class="block-card-title">
+          <div class="block-icon">⛓️</div>
+          <div>
+            <div class="block-num">Block #${index}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${time}</div>
+          </div>
+        </div>
+        <div class="block-status">
+          <span class="badge badge-success">● Confirmed</span>
+          <span class="badge badge-primary">ABPC Consensus</span>
+        </div>
+      </div>
+
+      <div class="block-card-body">
+        <div class="block-detail-grid">
+          <div class="block-detail-item">
+            <div class="bdi-label">Block Hash</div>
+            <div class="bdi-value hash" onclick="copyHash('${hash}', this)">
+              ${hash.substring(0, 16)}...${hash.substring(hash.length - 8)} 📋
+            </div>
+          </div>
+          <div class="block-detail-item">
+            <div class="bdi-label">Previous Hash</div>
+            <div class="bdi-value hash" onclick="copyHash('${prev}', this)">
+              ${prev ? prev.substring(0, 16) + '...' : 'Genesis Block'} ${prev ? '📋' : ''}
+            </div>
+          </div>
+          <div class="block-detail-item">
+            <div class="bdi-label">Leader Node</div>
+            <div class="bdi-value">
+              👑 ${leader}
+              <span class="badge badge-elite" style="font-size:10px;margin-left:6px">${pool}</span>
+            </div>
+          </div>
+          <div class="block-detail-item">
+            <div class="bdi-label">Nonce</div>
+            <div class="bdi-value">${block.nonce || 0}</div>
+          </div>
+          <div class="block-detail-item">
+            <div class="bdi-label">Difficulty</div>
+            <div class="bdi-value">${block.difficulty || 4}</div>
+          </div>
+          <div class="block-detail-item">
+            <div class="bdi-label">Transactions</div>
+            <div class="bdi-value">${hasTx ? '1' : '0'}</div>
+          </div>
+        </div>
+
+        ${hasTx ? `
+          <div class="tx-list">
+            <div class="tx-list-title">📋 Transaction Details</div>
+            <div class="tx-item">
+              <div class="tx-icon-wrap">💸</div>
+              <div class="tx-info">
+                <div class="tx-from-to">
+                  <strong>${donor}</strong> → <strong>${needy}</strong>
+                  ${category ? `· <span class="badge badge-primary" style="font-size:10px">${category}</span>` : ''}
+                </div>
+                <div class="tx-hash" onclick="copyHash('${txId}', this)">
+                  Tx: ${txId.substring(0, 24)}... 📋
+                </div>
+                ${caseId ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">
+                  Case ID: <span class="font-mono">${caseId}</span>
+                </div>` : ''}
+              </div>
+              <div class="tx-amount">$${amount.toLocaleString()}</div>
+            </div>
+          </div>
+        ` : `
+          <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);
+            text-align:center;font-size:12px;color:var(--muted)">
+            No transactions in this block
+          </div>
+        `}
+      </div>
+    </div>`;
+}
+
+/* ── SEARCH ── */
+function handleSearchKeypress(e) {
+  if (e.key === 'Enter') {
+    performSearch();
+  }
+}
+
+function performSearch() {
+  searchQuery = document.getElementById('explorer-search-input').value.trim();
+  displayedCount = 20;
+  renderBlocks();
+
+  if (searchQuery) {
+    Toast.show(`Searching for: ${searchQuery}`, 'info', 2000);
+  }
+}
+
+/* ── LOAD MORE ── */
+function loadMoreBlocks() {
+  displayedCount += 20;
+  renderBlocks();
+}
+
+/* ── WEBSOCKET ── */
+function setupSocketListeners() {
+  Socket.on('block_confirmed', async (data) => {
+    Toast.show('New block confirmed!', 'success', 3000);
+    await loadBlockchain();
+  });
+
+  Socket.on('consensus_stage', (data) => {
+    if (data?.stage === 'L9_complete') {
+      // New block finalized
+      loadBlockchain();
+    }
+  });
+}
+</script>
+
+</body>
+</html>
