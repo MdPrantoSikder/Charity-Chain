@@ -676,8 +676,8 @@
   </div>
 
   <div class="nav-actions" id="nav-actions">
-    <a href="index.html" class="btn btn-ghost btn-sm">Login</a>
-    <a href="index.html" class="btn btn-primary btn-sm">Start Donating</a>
+    <a href="login.html" class="btn btn-ghost btn-sm">Login</a>
+    <a href="login.html" class="btn btn-primary btn-sm">Start Donating</a>
   </div>
 </nav>
 
@@ -701,7 +701,7 @@
     </p>
 
     <div class="hero-actions">
-      <a href="index.html" class="btn-hero-primary">
+      <a href="login.html" class="btn-hero-primary">
         💜 Donate Now — It Takes 2 Minutes
       </a>
       <a href="#how-it-works" class="btn-hero-ghost" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'});return false;">
@@ -864,7 +864,7 @@
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:4px">40% funded · 23 donors</div>
           </div>
-          <a href="index.html" class="btn btn-primary btn-sm btn-block">Donate to Rahim</a>
+          <a href="login.html" class="btn btn-primary btn-sm btn-block">Donate to Rahim</a>
         </div>
       </div>
 
@@ -887,7 +887,7 @@
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:4px">60% funded · 41 donors</div>
           </div>
-          <a href="index.html" class="btn btn-primary btn-sm btn-block">Support Fatema</a>
+          <a href="login.html" class="btn btn-primary btn-sm btn-block">Support Fatema</a>
         </div>
       </div>
 
@@ -911,13 +911,13 @@
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:4px">18% funded · 12 donors</div>
           </div>
-          <a href="index.html" class="btn btn-primary btn-sm btn-block">Help Karim's Family</a>
+          <a href="login.html" class="btn btn-primary btn-sm btn-block">Help Karim's Family</a>
         </div>
       </div>
     </div>
 
     <div style="text-align:center;margin-top:32px">
-      <a href="index.html" class="btn-hero-ghost">View All Approved Cases →</a>
+      <a href="login.html" class="btn-hero-ghost">View All Approved Cases →</a>
     </div>
   </div>
 </section>
@@ -1058,7 +1058,7 @@
       tracked, and proven on blockchain. Your kindness — guaranteed to arrive.
     </p>
     <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
-      <a href="index.html" class="btn-hero-primary">
+      <a href="login.html" class="btn-hero-primary">
         💜 Make Your First Donation
       </a>
       <a href="explorer.html" class="btn-hero-ghost">
@@ -1141,7 +1141,7 @@ function goTrack() {
     return;
   }
   localStorage.setItem('cc_track_id', id);
-  window.location.href = Auth.isLoggedIn() ? 'donor.html' : 'index.html';
+  window.location.href = Auth.isLoggedIn() ? 'donor.html' : 'login.html';
 }
 </script>
 

@@ -50,7 +50,7 @@ const Auth = {
   // Example: Auth.requireRole('donor') on donor.html
   requireRole(role) {
     if (!this.isLoggedIn()) {
-      window.location.href = 'index.html';
+      window.location.href = 'login.html';
       return false;
     }
     if (role && this.getRole() !== role) {
@@ -72,7 +72,7 @@ const Auth = {
       admin:     'admin.html',
       validator: 'admin.html'
     };
-    window.location.href = routes[role] || 'index.html';
+    window.location.href = routes[role] || 'login.html';
   },
 
   // ── Logout ──
@@ -80,7 +80,7 @@ const Auth = {
   logout() {
     localStorage.removeItem('cc_token');
     localStorage.removeItem('cc_user');
-    window.location.href = 'index.html';
+    window.location.href = 'login.html';
   },
 
   // ── Fill in user info on page ──
