@@ -543,13 +543,35 @@
         </div>
 
         <div class="card">
-          <div class="card-header"><div class="card-title">👥 All Registered Users</div></div>
+          <div class="card-header" style="flex-wrap:wrap;gap:8px">
+            <div class="card-title">👥 All Registered Users</div>
+            <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
+              <input id="user-search" type="text" placeholder="Search name or email…"
+                     oninput="usersPage=1;renderUsersTable()"
+                     style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;min-width:190px">
+              <select id="user-role-filter" onchange="usersPage=1;renderUsersTable()"
+                      style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+                <option value="">All roles</option>
+                <option value="admin">Admin</option>
+                <option value="donor">Donor</option>
+                <option value="needy">Needy</option>
+                <option value="trustee">Trustee</option>
+              </select>
+            </div>
+          </div>
           <div class="card-body" style="padding:0">
             <div class="table-wrap">
               <table>
                 <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>KYC</th><th>Wallet (BDT)</th><th>Joined</th></tr></thead>
                 <tbody id="users-tbody"></tbody>
               </table>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)">
+              <span id="users-count" style="font-size:12px;color:var(--muted)"></span>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-sm" onclick="usersPage=Math.max(1,usersPage-1);renderUsersTable()">‹ Prev</button>
+                <button class="btn btn-ghost btn-sm" onclick="usersPage=usersPage+1;renderUsersTable()">Next ›</button>
+              </div>
             </div>
           </div>
         </div>
@@ -999,7 +1021,9 @@ function renderUsers(pending) {
         <td style="font-weight:600">${esc(u.full_name)}</td>
         <td style="font-size:12px;color:var(--sub)">${esc(u.email)}</td>
         <td><span class="badge badge-primary">${esc(u.role)}</span></td>
-        <td><span class="badge badge-warning">${esc(u.kyc_status)}</span></td>
+        <td>${u.role === 'trustee'
+              ? `<span class="badge ${u.kyc_status === 'verified' ? 'badge-success' : 'badge-warning'}">${esc(u.kyc_status || 'pending')}</span>`
+              : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="font-size:12px;color:var(--muted)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
         <td><div style="display:flex;gap:6px">
           <button class="btn btn-success btn-sm" onclick="approveTrustee('${esc(u.id)}','${esc(u.full_name)}')">✅ Approve</button>
@@ -1008,12 +1032,38 @@ function renderUsers(pending) {
     : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div>
          <div class="empty-title">No pending trustees</div></div></td></tr>`;
 
-  document.getElementById('users-tbody').innerHTML = state.users.length
-    ? state.users.map(u => `<tr>
+  renderUsersTable();
+}
+
+var usersPage = 1;
+var USERS_PER_PAGE = 20;
+
+function renderUsersTable() {
+  var q = (document.getElementById('user-search') || {}).value || '';
+  var rf = (document.getElementById('user-role-filter') || {}).value || '';
+  q = q.toLowerCase();
+  var filtered = (state.users || []).filter(function (u) {
+    var okRole = !rf || u.role === rf;
+    var okText = !q || (u.full_name || '').toLowerCase().indexOf(q) > -1
+                    || (u.email || '').toLowerCase().indexOf(q) > -1;
+    return okRole && okText;
+  });
+  var pages = Math.max(1, Math.ceil(filtered.length / USERS_PER_PAGE));
+  if (usersPage > pages) usersPage = pages;
+  var start = (usersPage - 1) * USERS_PER_PAGE;
+  var slice = filtered.slice(start, start + USERS_PER_PAGE);
+  var cnt = document.getElementById('users-count');
+  if (cnt) cnt.textContent = filtered.length
+    ? 'Showing ' + (start + 1) + '–' + (start + slice.length) + ' of ' + filtered.length
+    : 'No matching users';
+  document.getElementById('users-tbody').innerHTML = slice.length
+    ? slice.map(u => `<tr>
         <td style="font-weight:600">${esc(u.full_name || '—')}</td>
         <td style="font-size:12px;color:var(--sub)">${esc(u.email)}</td>
         <td><span class="badge badge-primary">${esc(u.role)}</span></td>
-        <td><span class="badge ${u.kyc_status === 'verified' ? 'badge-success' : 'badge-warning'}">${esc(u.kyc_status || 'pending')}</span></td>
+        <td>${u.role === 'trustee'
+              ? `<span class="badge ${u.kyc_status === 'verified' ? 'badge-success' : 'badge-warning'}">${esc(u.kyc_status || 'pending')}</span>`
+              : '<span style="color:var(--muted)">—</span>'}</td>
         <td class="font-mono" style="font-size:12px">${fmtNum(u.wallet_balance)}</td>
         <td style="font-size:12px;color:var(--muted)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
       </tr>`).join('')
