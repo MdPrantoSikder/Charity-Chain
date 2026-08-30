@@ -29,3 +29,4 @@ wsl-setup/node*/data/
 
 # archives
 archive_*.tar.gz
+*.bak
