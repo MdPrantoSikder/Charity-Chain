@@ -202,4 +202,4 @@ To evaluate a different protocol, swap the configuration file. Nothing else chan
 
 ---
 
-<sub>Final-year thesis project — Department of Computer Science and Engineering, University of Liberal Arts Bangladesh.</sub>
+<sub>Final-year capstone project — Department of Computer Science and Engineering, University of Liberal Arts Bangladesh.</sub>
