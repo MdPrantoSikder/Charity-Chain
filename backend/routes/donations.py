@@ -311,15 +311,43 @@ async def track_donation(
     donation_id: str,
     db:          AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(
-        select(Donation, User, Case)
-        .join(User, Donation.donor_id == User.id)
-        .join(Case, Donation.case_id  == Case.id)
-        .where(Donation.id == donation_id)
-    )
+    # Accept a donation ID, the application transaction hash, the block hash,
+    # or any on-chain transaction hash recorded in the audit log.
+    key = (donation_id or "").strip()
+    if key.startswith("0x"):
+        key = key[2:]
+
+    base = (select(Donation, User, Case)
+            .join(User, Donation.donor_id == User.id)
+            .join(Case, Donation.case_id == Case.id))
+
+    result = await db.execute(base.where(Donation.id == key))
     row = result.one_or_none()
+
     if not row:
-        raise HTTPException(status_code=404, detail="Donation not found")
+        result = await db.execute(base.where(Donation.tx_hash == key))
+        row = result.one_or_none()
+
+    if not row:
+        br = await db.execute(select(Block).where(Block.block_hash == key))
+        blk = br.scalar_one_or_none()
+        if blk:
+            result = await db.execute(base.where(Donation.block_id == blk.id))
+            row = result.one_or_none()
+
+    if not row:
+        lr = await db.execute(select(AuditLog).where(AuditLog.tx_hash == key))
+        log = lr.scalar_one_or_none()
+        if log and log.meta:
+            did = log.meta.get("donation_id") or log.meta.get("block_id")
+            if did:
+                result = await db.execute(base.where(Donation.id == did))
+                row = result.one_or_none()
+
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail="No donation found for that ID or hash")
 
     d, u, c = row
 
