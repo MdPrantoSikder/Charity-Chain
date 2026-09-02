@@ -148,13 +148,13 @@ Reported in full, because they bound what the results claim:
 ## Repository layout
 
 ```
-backend/            FastAPI application — blockchain client, escrow, auth, routes
-frontend/           Web interface — donor, trustee, admin, explorer
-blockchain/         Solidity contracts and Hardhat configuration
-cbbft-consensus/    CB-BFT proposer selector and staged patches against Besu
-wsl-setup/          Docker Compose and network setup for the 15-node testbed
-cbbft-results/      Experiment data, figures, and analysis scripts
-caliper-reports/    Caliper configuration, workload, HTML reports, summary figure
+backend/            FastAPI application — blockchain client, escrow, auth, routes.
+frontend/           Web interface — donor, trustee, admin, explorer.
+blockchain/         Solidity contracts and Hardhat configuration.
+cbbft-consensus/    CB-BFT proposer selector and staged patches against Besu.
+wsl-setup/          Docker Compose and network setup for the 15-node testbed.
+cbbft-results/      Experiment data, figures, and analysis scripts.
+caliper-reports/    Caliper configuration, workload, HTML reports, summary figure.
 ```
 
 ---
@@ -202,4 +202,4 @@ To evaluate a different protocol, swap the configuration file. Nothing else chan
 
 ---
 
-<sub>Final-year thesis project — Department of Computer Science and Engineering, University of Liberal Arts Bangladesh.</sub>
+<sub>Final-year capstone project — Department of Computer Science and Engineering, University of Liberal Arts Bangladesh.</sub>
