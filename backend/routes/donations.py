@@ -61,6 +61,19 @@ async def donate(
     if req.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive")
 
+    # ── Cap at the remaining need ────────────────────────────────────
+    # A case cannot receive more than its goal. Once fully funded it is
+    # closed and no further donations are accepted.
+    remaining = (case.amount_needed or 0) - (case.amount_funded or 0)
+    if remaining <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="This case is fully funded and no longer accepting donations")
+    if req.amount > remaining:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only ${remaining:,.2f} is still needed for this case")
+
     t_start = time.perf_counter()
 
     # ── Lock the donor row ───────────────────────────────────────────
@@ -222,6 +235,8 @@ async def donate(
     # Deduct from the locked row, not from current_user.
     donor.wallet_balance -= req.amount
     case.amount_funded    = (case.amount_funded or 0) + req.amount
+    if case.amount_funded >= (case.amount_needed or 0):
+        case.status = "completed"
 
     db.add(AuditLog(
         event_type  = "donation_confirmed",
