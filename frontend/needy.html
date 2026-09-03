@@ -921,8 +921,8 @@ function renderOverviewTable() {
       <td class="font-mono" style="font-size:11px">${c.id}</td>
       <td style="font-weight:600">${c.title}</td>
       <td>${statusBadge(c.status)}</td>
-      <td>$${(c.amount_needed||0).toLocaleString()}</td>
-      <td style="color:var(--success);font-weight:600">$${(c.amount_funded||0).toLocaleString()}</td>
+      <td>৳${(c.amount_needed||0).toLocaleString()}</td>
+      <td style="color:var(--success);font-weight:600">৳${(c.amount_funded||0).toLocaleString()}</td>
       <td>
         <button class="btn btn-ghost btn-sm"
           onclick="viewCaseDetail('${c.id}')">View</button>
@@ -944,9 +944,9 @@ function renderAllCasesTable() {
         <td style="font-weight:600">${c.title}</td>
         <td>${c.category || '—'}</td>
         <td>${statusBadge(c.status)}</td>
-        <td>$${(c.amount_needed||0).toLocaleString()}</td>
+        <td>৳${(c.amount_needed||0).toLocaleString()}</td>
         <td style="color:var(--success);font-weight:600">
-          $${(c.amount_funded||0).toLocaleString()}
+          ৳${(c.amount_funded||0).toLocaleString()}
         </td>
         <td>
           <div class="attr-bar-wrap" style="min-width:100px">
@@ -978,13 +978,13 @@ function renderFundsCases() {
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
           <div class="card-title">${c.title}</div>
-          <span class="badge badge-success">$${(c.amount_funded||0).toLocaleString()} received</span>
+          <span class="badge badge-success">৳${(c.amount_funded||0).toLocaleString()} received</span>
         </div>
         <div class="card-body">
           <!-- Progress -->
           <div class="flex-between" style="font-size:12px;color:var(--muted);margin-bottom:6px">
-            <span>Funded: $${(c.amount_funded||0).toLocaleString()}</span>
-            <span>Goal: $${(c.amount_needed||0).toLocaleString()}</span>
+            <span>Funded: ৳${(c.amount_funded||0).toLocaleString()}</span>
+            <span>Goal: ৳${(c.amount_needed||0).toLocaleString()}</span>
           </div>
           <div class="progress-wrap" style="margin-bottom:16px">
             <div class="progress-bar" style="width:${pct}%"></div>
