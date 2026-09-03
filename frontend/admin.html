@@ -562,7 +562,7 @@
           <div class="card-body" style="padding:0">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>KYC</th><th>Wallet (BDT)</th><th>Joined</th></tr></thead>
+                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>KYC</th><th>Wallet</th><th>Joined</th></tr></thead>
                 <tbody id="users-tbody"></tbody>
               </table>
             </div>
@@ -789,7 +789,7 @@ function renderStats() {
   set('stat-height', fmtNum(state.consensus?.chain_height));
   set('stat-interval', state.chain?.avg_block_interval
         ? `${state.chain.avg_block_interval}s average` : '—');
-  set('stat-volume', fmtNum(volume));
+  set('stat-volume', '৳' + fmtNum(volume));
 }
 
 /* ── VALIDATOR TABLES ── */
@@ -917,7 +917,7 @@ function renderBlocks() {
           <td class="font-mono" style="font-size:11px;color:var(--primary)">#${b.index}</td>
           <td style="font-size:12px">${esc(tx.case_id || '—')}</td>
           <td style="font-size:12px">${esc(tx.donor_name || '—')}</td>
-          <td><strong>${fmtNum(tx.amount)}</strong></td>
+          <td><strong>৳${fmtNum(tx.amount)}</strong></td>
           <td><span class="hash-copy" onclick="event.stopPropagation();copyHash('${esc(b.block_hash)}',this)">
               ${esc((b.block_hash||'').substring(0,12))}… 📋</span></td>
           <td class="addr">${esc(shortAddr(b.leader_node))}</td>
@@ -939,7 +939,7 @@ function renderBlocks() {
           <div class="tx-id">#${b.index}</div>
           <div style="flex:1;font-size:12px">Case ${esc(tx.case_id || '—')}</div>
           <div class="addr" style="color:var(--muted)">${esc(shortAddr(b.leader_node))}</div>
-          <div style="font-weight:600;font-size:12px">${fmtNum(tx.amount)}</div>
+          <div style="font-weight:600;font-size:12px">৳${fmtNum(tx.amount)}</div>
           <span class="badge badge-success" style="font-size:10px">Anchored</span>
         </div>`;
       }).join('')
@@ -1064,7 +1064,7 @@ function renderUsersTable() {
         <td>${u.role === 'trustee'
               ? `<span class="badge ${u.kyc_status === 'verified' ? 'badge-success' : 'badge-warning'}">${esc(u.kyc_status || 'pending')}</span>`
               : '<span style="color:var(--muted)">—</span>'}</td>
-        <td class="font-mono" style="font-size:12px">${fmtNum(u.wallet_balance)}</td>
+        <td class="font-mono" style="font-size:12px">৳${fmtNum(u.wallet_balance)}</td>
         <td style="font-size:12px;color:var(--muted)">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
       </tr>`).join('')
     : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div>
