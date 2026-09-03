@@ -346,7 +346,7 @@
             <div class="stat-icon purple">💵</div>
             <div class="stat-body">
               <div class="stat-label">Total Fund Released</div>
-              <div class="stat-value" id="stat-funds">$0</div>
+              <div class="stat-value" id="stat-funds">৳0</div>
               <div class="stat-sub">All time</div>
             </div>
           </div>
@@ -582,7 +582,7 @@
                 </div>
                 <div class="case-detail-row">
                   <span class="case-detail-label">Funds Monitored</span>
-                  <strong id="report-funds">$0</strong>
+                  <strong id="report-funds">৳0</strong>
                 </div>
               </div>
             </div>
@@ -846,7 +846,7 @@ function renderStats() {
 
   document.getElementById('stat-pending').textContent  = pendingCases.length;
   document.getElementById('stat-approved').textContent = approvedCases.length;
-  document.getElementById('stat-funds').textContent    = '$' + totalFunds.toLocaleString();
+  document.getElementById('stat-funds').textContent    = '৳' + totalFunds.toLocaleString();
   document.getElementById('stat-users').textContent    = approvedCases.length + pendingCases.length;
 
   const badge = document.getElementById('pending-badge');
@@ -1128,7 +1128,7 @@ function renderReports() {
 
   if (rt) rt.textContent = total;
   if (rr) rr.textContent = rate + '%';
-  if (rf) rf.textContent = '$' + funds.toLocaleString();
+  if (rf) rf.textContent = '৳' + funds.toLocaleString();
   if (oc) oc.textContent = total;
   if (or) or.textContent = rate + '%';
 }
@@ -1147,7 +1147,7 @@ function openReviewModal(caseId) {
     c.applicant_name || 'User_' + c.needy_id;
   document.getElementById('review-category').textContent    = c.category;
   document.getElementById('review-amount').textContent      =
-    '$' + (c.amount_needed||0).toLocaleString();
+    '৳' + (c.amount_needed||0).toLocaleString();
   document.getElementById('review-submitted').textContent   =
     c.created_at ? new Date(c.created_at).toLocaleString() : '—';
   document.getElementById('review-ipfs').textContent        =

@@ -371,7 +371,7 @@
             <div class="stat-icon amber">💵</div>
             <div class="stat-body">
               <div class="stat-label">Funds Received</div>
-              <div class="stat-value" id="stat-funds">$0</div>
+              <div class="stat-value" id="stat-funds">৳0</div>
               <div class="stat-sub">This month</div>
             </div>
           </div>
@@ -718,7 +718,7 @@
             <div class="stat-icon green">💵</div>
             <div class="stat-body">
               <div class="stat-label">Total Received</div>
-              <div class="stat-value" id="funds-total">$0</div>
+              <div class="stat-value" id="funds-total">৳0</div>
               <div class="stat-sub">All time</div>
             </div>
           </div>
@@ -734,7 +734,7 @@
             <div class="stat-icon amber">⏳</div>
             <div class="stat-body">
               <div class="stat-label">Pending Release</div>
-              <div class="stat-value" id="funds-pending">$0</div>
+              <div class="stat-value" id="funds-pending">৳0</div>
               <div class="stat-sub">Awaiting confirmation</div>
             </div>
           </div>
@@ -906,8 +906,8 @@ function renderStats() {
   document.getElementById('stat-total').textContent   = total;
   document.getElementById('stat-approved').textContent = approved;
   document.getElementById('stat-pending').textContent  = pending;
-  document.getElementById('stat-funds').textContent    = '$' + funds.toLocaleString();
-  document.getElementById('funds-total').textContent   = '$' + funds.toLocaleString();
+  document.getElementById('stat-funds').textContent    = '৳' + funds.toLocaleString();
+  document.getElementById('funds-total').textContent   = '৳' + funds.toLocaleString();
   document.getElementById('funds-cases').textContent   = approved;
 }
 
@@ -1058,7 +1058,7 @@ async function submitCase() {
   }
 
   if (amount < 1) {
-    document.getElementById('apply-error-msg').textContent = 'Amount must be at least $1';
+    document.getElementById('apply-error-msg').textContent = 'Amount must be at least ৳1';
     document.getElementById('apply-error').style.display   = 'flex';
     return;
   }
@@ -1176,7 +1176,7 @@ async function loadNotifications() {
     {
       icon: '💵',
       bg: 'var(--info-subtle)',
-      title: 'Funds of $100 released for case #C12',
+      title: 'Funds of ৳100 released for case #C12',
       time: '11 May 2025, 09:15 AM'
     },
     {
